@@ -31,7 +31,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import bs4
 import json
 import logging
 import requests
@@ -95,16 +94,7 @@ class FossServer(object):
         # retrieve from upload_file, since that provides the list of all folders
         endpoint = "/repo/?mod=upload_file"
         results = self._get(endpoint)
-        c = results.content
-        soup = bs4.BeautifulSoup(c, "lxml")
-        folders = soup.findAll("select", {"name":"folder"})
-        if folders is None:
-            return None
-        for folder in folders:
-            for option in folder.findAll("option"):
-                if option.text.strip() == folderName:
-                    return option["value"]
-        return None
+        return fossdriver.parser.parseFolderNumber(results.content, folderName)
 
     def _getUploadData(self, folderNum, uploadName, exact=True):
         """
@@ -125,7 +115,7 @@ class FossServer(object):
         if uploadData is None:
             return None
 
-        parsedUploads = fossdriver.parser.extractAllUploadDataForFolder(uploadData)
+        parsedUploads = fossdriver.parser.parseAllUploadDataForFolder(uploadData)
         if parsedUploads == []:
             return None
         for u in parsedUploads:
@@ -148,3 +138,25 @@ class FossServer(object):
         if u is None:
             return -1
         return u._id
+
+    def GetUploadFormBuildToken(self):
+        """Obtain a hidden one-time form token to upload a file for scanning."""
+        endpoint = f"/repo/?mod=upload_file"
+        results = self._get(endpoint)
+        return fossdriver.parser.parseUploadFormBuildToken(results.content)
+
+    def CreateFolder(self, parentFolderNum, folderName, folderDesc=""):
+        """
+        Create a new folder for scans.
+        Arguments:
+            - parentFolderNum: ID number of parent folder.
+            - folderName: new name for folder.
+            - folderDesc: new description for folder. Defaults to empty string.
+        """
+        endpoint = f"/repo/?mod=folder_create"
+        values = {
+            "parentid": str(parentFolderNum),
+            "newname": folderName,
+            "description": folderDesc,
+        }
+        self._post(endpoint, values)

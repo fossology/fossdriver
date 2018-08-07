@@ -32,6 +32,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import bs4
+import logging
 
 class ParsedUpload(object):
     def __init__(self):
@@ -42,7 +43,7 @@ class ParsedUpload(object):
         self.spdxXmlUrl = ""
 
 
-def extractUploadDataForFolderLineItem(lineItem):
+def parseUploadDataForFolderLineItem(lineItem):
     """
     Parses one line item for parsing the uploads in a folder.
     Returns a ParsedUpload object with the fields filled in.
@@ -64,14 +65,35 @@ def extractUploadDataForFolderLineItem(lineItem):
     u._id = lineItem[2][0]
     return u
 
-def extractAllUploadDataForFolder(uploadData):
+def parseAllUploadDataForFolder(uploadData):
     """
     Parses all line items from a call to browse-processPost.
     Returns a list of all found ParsedUpload objects.
     """
     parsedUploads = []
     for lineItem in uploadData:
-        u = extractUploadDataForFolderLineItem(lineItem)
+        u = parseUploadDataForFolderLineItem(lineItem)
         if u is not None:
             parsedUploads.append(u)
     return parsedUploads
+
+def parseUploadFormBuildToken(content):
+    """Extract and return the uploadformbuild token from previously-retrieved HTML."""
+    soup = bs4.BeautifulSoup(content, "lxml")
+    try:
+        return soup.find("input", {"name": "uploadformbuild"}).get("value", None)
+    except Exception as e:
+        logging.warn(f"Couldn't extract uploadformbuild token: {str(e)}")
+        return None
+
+def parseFolderNumber(content, folderName):
+    """Extract and return the folder ID number for the given folder name."""
+    soup = bs4.BeautifulSoup(content, "lxml")
+    folders = soup.findAll("select", {"name":"folder"})
+    if folders is None:
+        return None
+    for folder in folders:
+        for option in folder.findAll("option"):
+            if option.text.strip() == folderName:
+                return option["value"]
+    return None

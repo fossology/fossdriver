@@ -33,3 +33,5 @@ if __name__ == "__main__":
     u = server._getUploadData(folderNum, upload, False)
     print(u.spdxTvUrl)
     print(u.spdxXmlUrl)
+
+    server.CreateFolder(folderNum, "testFolder", "test desc")
