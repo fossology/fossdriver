@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Based in significant part on fossup from Togán Labs,
-# https://gitlab.com/toganlabs/fossup, with the following copyright notice:
+# https://gitlab.com/toganlabs/fossup, with the following notice:
 #
 # Copyright (C) 2016-2018, Togan Labs Ltd. All rights reserved.
 #
@@ -31,12 +31,15 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import requests
-import urllib
-import logging
-import time
 import bs4
+import json
+import logging
+import requests
 from requests_toolbelt.multipart.encoder import MultipartEncoder
+import time
+import urllib
+
+import fossdriver.parser
 
 class FossServer(object):
 
@@ -88,7 +91,7 @@ class FossServer(object):
         # FIXME check for success?
 
     def GetFolderNum(self, folderName):
-        """Find folder ID number for given folder name from Fossology server."""
+        """Find folder ID number for the given folder name from Fossology server."""
         # retrieve from upload_file, since that provides the list of all folders
         endpoint = "/?mod=upload_file"
         results = self._get(endpoint)
@@ -102,3 +105,33 @@ class FossServer(object):
                 if option.text.strip() == folderName:
                     return option["value"]
         return None
+
+    def GetUploadNum(self, folderNum, uploadName, exact=True):
+        """
+        Find upload ID number for the given name from Fossology server.
+        Arguments:
+            - folderNum: ID number for folder to search,
+                         likely obtained from GetFolderNum
+            - uploadName: name of upload to search for
+            - exact: if True, will return the first upload to have exactly this name.
+                     if False, will return the first upload to contain this name.
+        """
+        # FIXME note that using browse-processPost means we may only get
+        # FIXME the first 100 uploads in the folder. may be able to check
+        # FIXME iTotalDisplayRecords and loop to get more if needed
+        endpoint = f"/?mod=browse-processPost&folder={folderNum}&iDisplayStart=0&iDisplayLength=100"
+        results = self._get(endpoint)
+        rj = json.loads(results.content)
+        uploadData = rj.get("aaData", None)
+        if uploadData is None:
+            return -1
+
+        parsedUploads = fossdriver.parser.extractAllUploadDataForFolder(uploadData)
+        if parsedUploads == []:
+            return -1
+        for u in parsedUploads:
+            if exact == True and uploadName == u.name:
+                return u._id
+            if exact == False and uploadName in u.name:
+                return u._id
+        return -1

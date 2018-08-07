@@ -21,6 +21,11 @@ if __name__ == "__main__":
     server = FossServer(config)
     server.Login()
 
-    folder = "ONAP-2018-07"
+    folder = "Burrow"
+    upload = "burrow"
+
     folderNum = server.GetFolderNum(folder)
     print(f"Folder {folder} is ID {folderNum}")
+
+    uploadNum = server.GetUploadNum(folderNum, upload, False)
+    print(f"Upload {upload} is ID {uploadNum}")
