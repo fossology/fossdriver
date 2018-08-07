@@ -29,3 +29,7 @@ if __name__ == "__main__":
 
     uploadNum = server.GetUploadNum(folderNum, upload, False)
     print(f"Upload {upload} is ID {uploadNum}")
+
+    u = server._getUploadData(folderNum, upload, False)
+    print(u.spdxTvUrl)
+    print(u.spdxXmlUrl)

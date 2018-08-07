@@ -82,7 +82,7 @@ class FossServer(object):
 
     def Login(self):
         """Log in to Fossology server. Should be the first call made."""
-        endpoint = "/?mod=auth"
+        endpoint = "/repo/?mod=auth"
         values = {
             "username": self.config.username,
             "password": self.config.password,
@@ -93,7 +93,7 @@ class FossServer(object):
     def GetFolderNum(self, folderName):
         """Find folder ID number for the given folder name from Fossology server."""
         # retrieve from upload_file, since that provides the list of all folders
-        endpoint = "/?mod=upload_file"
+        endpoint = "/repo/?mod=upload_file"
         results = self._get(endpoint)
         c = results.content
         soup = bs4.BeautifulSoup(c, "lxml")
@@ -106,32 +106,45 @@ class FossServer(object):
                     return option["value"]
         return None
 
-    def GetUploadNum(self, folderNum, uploadName, exact=True):
+    def _getUploadData(self, folderNum, uploadName, exact=True):
         """
-        Find upload ID number for the given name from Fossology server.
+        Helper to retrieve upload data for the given name from Fossology server.
         Arguments:
-            - folderNum: ID number for folder to search,
-                         likely obtained from GetFolderNum
-            - uploadName: name of upload to search for
+            - folderNum: ID number for folder to search, likely obtained from GetFolderNum.
+            - uploadName: name of upload to search for.
             - exact: if True, will return the first upload to have exactly this name.
                      if False, will return the first upload to contain this name.
         """
         # FIXME note that using browse-processPost means we may only get
         # FIXME the first 100 uploads in the folder. may be able to check
         # FIXME iTotalDisplayRecords and loop to get more if needed
-        endpoint = f"/?mod=browse-processPost&folder={folderNum}&iDisplayStart=0&iDisplayLength=100"
+        endpoint = f"/repo/?mod=browse-processPost&folder={folderNum}&iDisplayStart=0&iDisplayLength=100"
         results = self._get(endpoint)
         rj = json.loads(results.content)
         uploadData = rj.get("aaData", None)
         if uploadData is None:
-            return -1
+            return None
 
         parsedUploads = fossdriver.parser.extractAllUploadDataForFolder(uploadData)
         if parsedUploads == []:
-            return -1
+            return None
         for u in parsedUploads:
             if exact == True and uploadName == u.name:
-                return u._id
+                return u
             if exact == False and uploadName in u.name:
-                return u._id
-        return -1
+                return u
+        return None
+
+    def GetUploadNum(self, folderNum, uploadName, exact=True):
+        """
+        Find upload ID number for the given name from Fossology server.
+        Arguments:
+            - folderNum: ID number for folder to search, likely obtained from GetFolderNum.
+            - uploadName: name of upload to search for.
+            - exact: if True, will return the first upload to have exactly this name.
+                     if False, will return the first upload to contain this name.
+        """
+        u = self._getUploadData(folderNum, uploadName, exact)
+        if u is None:
+            return -1
+        return u._id

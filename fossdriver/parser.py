@@ -53,6 +53,13 @@ def extractUploadDataForFolderLineItem(lineItem):
     # the name is stored in the bold tag
     boldTag = soup.b
     u.name = boldTag.string
+    # search through option strings to get SPDX URLs
+    opt = soup.find("option", {"title": "Generate SPDX report"})
+    if opt is not None:
+        u.spdxXmlUrl = opt.attrs.get("value")
+    opt = soup.find("option", {"title": "Generate SPDX report in tag:value format"})
+    if opt is not None:
+        u.spdxTvUrl = opt.attrs.get("value")
     # and the upload ID is in lineItem[2][0]
     u._id = lineItem[2][0]
     return u
