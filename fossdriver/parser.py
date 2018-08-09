@@ -168,3 +168,35 @@ def parseDecodedAjaxShowJobsData(content):
                 job.reportId = int(p[2])
         jobData.append(job)
     return jobData
+
+def parseSingleJobData(content):
+    """Parse the JSON data returned from status call for a single job."""
+    rj = json.loads(content)
+    jobArr = rj.get("aaData", None)
+    if jobArr is None:
+        return None
+    job = ParsedJob()
+    # first row: job ID
+    jobIdRow = jobArr[0]
+    jobIdString = jobIdRow.get("1", None)
+    if jobIdRow is not None:
+        soup = bs4.BeautifulSoup(jobIdString, "lxml")
+        aLink = soup.a
+        if aLink.contents != []:
+            job._id = int(aLink.contents[0])
+    # third row: agent name
+    jobAgentRow = jobArr[3]
+    job.agent = jobAgentRow.get("1", "")
+    # twelfth row: job status
+    jobStatusRow = jobArr[11]
+    statusLines = jobStatusRow.get("1", "")
+    if statusLines is not None:
+        p = statusLines.partition("<br>")
+        job.status = p[0]
+    # second row: report ID, if this is an SPDX reporter job
+    jobReportIdRow = jobArr[1]
+    jobReportIdString = jobReportIdRow.get("1", None)
+    if ((job.agent == "spdx2tv" or job.agent == "spdx2") and
+        job.status == "Completed"):
+        job.reportId = int(jobReportIdString)
+    return job

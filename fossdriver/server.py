@@ -218,6 +218,14 @@ class FossServer(object):
         jobData = fossdriver.parser.parseDecodedAjaxShowJobsData(decodedContent)
         return jobData
 
+    def _getJobSingleData(self, jobNum):
+        endpoint = f"/repo/?mod=ajaxShowJobs&do=showSingleJob&jobId={jobNum}"
+        results = self._get(endpoint)
+        job = fossdriver.parser.parseSingleJobData(results.content)
+        return job
+
+#    def _isJobDoneYet(self, jobNum):
+
     def StartReuserAgent(self, uploadNum, reusedUploadNum):
         """
         Start the reuser agent.
