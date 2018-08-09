@@ -33,6 +33,8 @@
 
 import json
 import logging
+from mimetypes import MimeTypes
+import os
 import requests
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 import time
@@ -60,6 +62,7 @@ class FossServer(object):
         data = values
         r = self.session.post(url, data=data)
         logging.debug("POST: " + url + " " + str(r))
+        return r
 
     def _postFile(self, endpoint, values):
         """Helper function: Make a POST call to the Fossology server with multipart data."""
@@ -78,6 +81,7 @@ class FossServer(object):
 
         r = self.session.post(url, data=data, headers=headers)
         logging.debug("POST (file): " + url + " " + str(r))
+        return r
 
     def Login(self):
         """Log in to Fossology server. Should be the first call made."""
@@ -139,8 +143,8 @@ class FossServer(object):
             return -1
         return u._id
 
-    def GetUploadFormBuildToken(self):
-        """Obtain a hidden one-time form token to upload a file for scanning."""
+    def _getUploadFormBuildToken(self):
+        """Helper function: Obtain a hidden one-time form token to upload a file for scanning."""
         endpoint = f"/repo/?mod=upload_file"
         results = self._get(endpoint)
         return fossdriver.parser.parseUploadFormBuildToken(results.content)
@@ -160,3 +164,42 @@ class FossServer(object):
             "description": folderDesc,
         }
         self._post(endpoint, values)
+
+    def StartUpload(self, filePath, folderNum):
+        """
+        Initiate an upload to the Fossology server. No scanning agents will be triggered.
+        Arguments:
+            - filePath: path to file being uploaded.
+            - folderNum: ID number of folder to receive upload.
+        """
+        endpoint = f"/repo/?mod=upload_file"
+        basename = os.path.basename(os.path.expanduser(filePath))
+        print(f"Uploading {basename} to folder {folderNum}...")
+
+        # determine mime type
+        mime = MimeTypes()
+        murl = urllib.request.pathname2url(filePath)
+        mime_type = mime.guess_type(murl)
+
+        # retrieve custom token for upload
+        buildtoken = self._getUploadFormBuildToken()
+
+        values = (
+            ("uploadformbuild", buildtoken),
+            ("folder", str(folderNum)),
+            ("fileInput", (basename, open(filePath, "rb"), mime_type[0])),
+            ("descriptionInputName", basename),
+            ("public", "private"),
+            ("Check_agent_bucket", "0"),
+            ("Check_agent_copyright", "0"),
+            ("Check_agent_ecc", "0"),
+            ("Check_agent_mimetype", "0"),
+            ("Check_agent_nomos", "0"),
+            ("Check_agent_monk", "0"),
+            ("Check_agent_pkgagent", "0"),
+            ("deciderRules[]", ""),
+        )
+
+        results = self._postFile(endpoint, values)
+        print("done")
+        print(results.content)

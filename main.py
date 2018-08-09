@@ -35,3 +35,5 @@ if __name__ == "__main__":
     print(u.spdxXmlUrl)
 
     server.CreateFolder(folderNum, "testFolder", "test desc")
+    newFolderNum = folderNum = server.GetFolderNum("testFolder")
+    server.StartUpload("/Users/steve/programming/lftools/tarballs/spdxSummarizer-2017-09-23.tar.gz", newFolderNum)
