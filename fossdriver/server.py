@@ -145,7 +145,7 @@ class FossServer(object):
 
     def _getUploadFormBuildToken(self):
         """Helper function: Obtain a hidden one-time form token to upload a file for scanning."""
-        endpoint = f"/repo/?mod=upload_file"
+        endpoint = "/repo/?mod=upload_file"
         results = self._get(endpoint)
         return fossdriver.parser.parseUploadFormBuildToken(results.content)
 
@@ -157,7 +157,7 @@ class FossServer(object):
             - folderName: new name for folder.
             - folderDesc: new description for folder. Defaults to empty string.
         """
-        endpoint = f"/repo/?mod=folder_create"
+        endpoint = "/repo/?mod=folder_create"
         values = {
             "parentid": str(parentFolderNum),
             "newname": folderName,
@@ -172,7 +172,7 @@ class FossServer(object):
             - filePath: path to file being uploaded.
             - folderNum: ID number of folder to receive upload.
         """
-        endpoint = f"/repo/?mod=upload_file"
+        endpoint = "/repo/?mod=upload_file"
         basename = os.path.basename(os.path.expanduser(filePath))
         print(f"Uploading {basename} to folder {folderNum}...")
 
@@ -203,3 +203,17 @@ class FossServer(object):
         results = self._postFile(endpoint, values)
         print("done")
         return fossdriver.parser.parseAnchorTagsForNewUploadNumber(results.content)
+
+    def _getJobsForUpload(self, uploadNum):
+        """Helper function: Retrieve job data for the given upload number."""
+        # FIXME currently retrieves just first page
+        endpoint = "/repo/?mod=ajaxShowJobs&do=showjb"
+        values = {
+            "upload": uploadNum,
+            "allusers": 0,
+            "page": 0,
+        }
+        results = self._post(endpoint, values)
+        decodedContent = fossdriver.parser.decodeAjaxShowJobsData(results.content)
+        jobData = fossdriver.parser.parseDecodedAjaxShowJobsData(decodedContent)
+        return jobData

@@ -32,6 +32,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import bs4
+import json
 import logging
 
 class ParsedUpload(object):
@@ -42,6 +43,15 @@ class ParsedUpload(object):
         self.spdxTvUrl = ""
         self.spdxXmlUrl = ""
 
+class ParsedJob(object):
+    def __init__(self):
+        self._id = -1
+        self.status = ""
+        self.agent = ""
+        self.reportId = -1
+
+    def __repr__(self):
+        return f"Job {self._id}: {self.agent}, {self.status}"
 
 def parseUploadDataForFolderLineItem(lineItem):
     """
@@ -110,3 +120,46 @@ def parseAnchorTagsForNewUploadNumber(content):
             p = href.partition("upload=")
             return int(p[2])
     return -1
+
+def decodeAjaxShowJobsData(content):
+    """Extract and decode the raw ajaxShowJobs data."""
+    rj = json.loads(content)
+    s1 = rj["showJobsData"]
+    # this is current a string that has unicode-escaped data.
+    # we want to convert it to a bytes object, then re-convert it back
+    # to a string and decode the escapes when doing so.
+    b1 = s1.encode("utf-8")
+    s2 = b1.decode("unicode-escape")
+    return s2
+
+def parseDecodedAjaxShowJobsData(content):
+    """Parse the ajaxShowJobs data that has already been decoded."""
+    soup = bs4.BeautifulSoup(content, "lxml")
+    rows = soup.find_all("tr")
+    jobData = {}
+    for row in rows:
+        cl = row.get("class", None)
+        if cl is None:
+            # header or other row; ignore
+            continue
+        job = ParsedJob()
+        cols = row.find_all("td")
+        # first column: job ID
+        job._id = int(cols[0].a.contents[0])
+        # second column: status
+        job.status = cols[1].contents[0]
+        # third column: agent name
+        job.agent = cols[2].contents[0]
+        # fourth column: # of items; may be empty or in process
+        # fifth column: date range
+        # sixth column: rate
+        # seventh column: ETA
+        # eighth column: job action
+        if job.status == "Completed":
+            aLink = cols[7].a
+            if aLink is not None:
+                href = aLink.get("href", None)
+                p = href.partition("report=")
+                job.reportId = int(p[2])
+        jobData[job._id] = job
+    return jobData
