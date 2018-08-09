@@ -144,6 +144,8 @@ def parseDecodedAjaxShowJobsData(content):
             continue
         job = ParsedJob()
         cols = row.find_all("td")
+        if cols is None or len(cols) < 8:
+            continue
         # first column: job ID
         job._id = int(cols[0].a.contents[0])
         # second column: status
