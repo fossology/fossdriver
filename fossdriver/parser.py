@@ -149,7 +149,10 @@ def parseDecodedAjaxShowJobsData(content):
         # first column: job ID
         job._id = int(cols[0].a.contents[0])
         # second column: status
-        job.status = cols[1].contents[0]
+        if cols[1].contents == []:
+            job.status = "Not started"
+        else:
+            job.status = cols[1].contents[0]
         # third column: agent name
         job.agent = cols[2].contents[0]
         # fourth column: # of items; may be empty or in process
