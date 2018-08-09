@@ -52,9 +52,19 @@ class FossServer(object):
     def _get(self, endpoint):
         """Helper function: Make a GET call to the Fossology server."""
         url = self.config.serverUrl + endpoint
-        r = self.session.get(url)
-        logging.debug("GET: " + url + " " + str(r))
-        return r
+        logging.debug("GET: " + url)
+        exc = None
+        for i in range(0,5):
+            try:
+                r = self.session.get(url)
+                return r
+            except requests.exceptions.ConnectionError as e:
+                # try again after a brief pause
+                time.sleep(1)
+                exc = e
+                logging.debug("attempt " + str(i+1) + " failed")
+        # if we get here, we failed to connect
+        raise exc
 
     def _post(self, endpoint, values):
         """Helper function: Make a POST call to the Fossology server."""
@@ -282,6 +292,37 @@ class FossServer(object):
             "upload": str(uploadNum),
         }
         results = self._post(endpoint, values)
+
+    def StartSPDXTVReportGeneratorAgent(self, uploadNum):
+        """
+        Start the spdx2tv agent to generate an SPDX tag-value report.
+        Arguments:
+            - uploadNum: ID number of upload to export as tag-value.
+        """
+        endpoint = f"/repo/?mod=ui_spdx2&outputFormat=spdx2tv&upload={uploadNum}"
+        self._get(endpoint)
+
+    def GetSPDXTVReport(self, uploadNum, outFilePath):
+        """
+        Download and write to disk the SPDX tag-value report for the most recent
+        spdx2tv agent.
+        Arguments:
+            - uploadNum: ID number of upload to retrieve report for.
+            - outFilePath: path to write report to.
+        Returns: True if succeeded, False if failed for any reason.
+        """
+        # first, get reportId so we can build the endpoint
+        jobNum = self._getMostRecentAgentJobNum(uploadNum, "spdx2tv")
+        job = self._getJobSingleData(jobNum)
+        if job.agent != "spdx2tv" or job.status != "Completed":
+            return False
+
+        # now, go get the actual report
+        endpoint = f"/repo/?mod=download&report={job.reportId}"
+        results = self._get(endpoint)
+        with open(outFilePath, "w") as f:
+            f.write(results.content.decode("utf-8"))
+        return True
 
     def IsAgentDone(self, uploadNum, agent):
         """
