@@ -109,7 +109,7 @@ def parseFolderNumber(content, folderName):
     return None
 
 def parseAnchorTagsForNewUploadNumber(content):
-    """Extract the new upload number from the response in a call to StartUpload."""
+    """Extract the new upload number from the response in a call to UploadFile."""
     soup = bs4.BeautifulSoup(content, "lxml")
     anchors = soup.find_all("a")
     for anchor in anchors:
@@ -136,7 +136,7 @@ def parseDecodedAjaxShowJobsData(content):
     """Parse the ajaxShowJobs data that has already been decoded."""
     soup = bs4.BeautifulSoup(content, "lxml")
     rows = soup.find_all("tr")
-    jobData = {}
+    jobData = []
     for row in rows:
         cl = row.get("class", None)
         if cl is None:
@@ -161,5 +161,5 @@ def parseDecodedAjaxShowJobsData(content):
                 href = aLink.get("href", None)
                 p = href.partition("report=")
                 job.reportId = int(p[2])
-        jobData[job._id] = job
+        jobData.append(job)
     return jobData

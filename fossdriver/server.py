@@ -165,7 +165,7 @@ class FossServer(object):
         }
         self._post(endpoint, values)
 
-    def StartUpload(self, filePath, folderNum):
+    def UploadFile(self, filePath, folderNum):
         """
         Initiate an upload to the Fossology server. No scanning agents will be triggered.
         Arguments:
@@ -217,3 +217,38 @@ class FossServer(object):
         decodedContent = fossdriver.parser.decodeAjaxShowJobsData(results.content)
         jobData = fossdriver.parser.parseDecodedAjaxShowJobsData(decodedContent)
         return jobData
+
+    def StartReuserAgent(self, uploadNum, folderNum, reusedUploadNum):
+        """
+        Start the reuser agent.
+        Arguments:
+            - uploadNum: ID number of upload to analyze.
+            - folderNum: ID number of folder containing upload to analyze.
+            - reusedUploadNum: ID number of upload to be reused.
+        """
+        # FIXME determine why the magic number 3 is used below --
+        # FIXME part of group ID? is it always 3?
+        endpoint = "/repo/?mod=agent_add"
+        values = {
+            "agents[]": "agent_reuser",
+            "folder": str(folderNum),
+            "reuseFolderSelectorName": f"{folderNum},3",
+            "upload": str(uploadNum),
+            "uploadToReuse": f"{reusedUploadNum},3",
+        }
+        results = self._post(endpoint, values)
+
+    def StartMonkAndNomosAgents(self, uploadNum, folderNum):
+        """
+        Start the monk and nomos agents.
+        Arguments:
+            - uploadNum: ID number of upload to analyze.
+            - folderNum: ID number of folder containing upload to analyze.
+        """
+        endpoint = "/repo/?mod=agent_add"
+        values = {
+            "agents[]": ["agent_monk", "agent_nomos"],
+            "folder": str(folderNum),
+            "upload": str(uploadNum),
+        }
+        results = self._post(endpoint, values)
