@@ -218,13 +218,40 @@ class FossServer(object):
         jobData = fossdriver.parser.parseDecodedAjaxShowJobsData(decodedContent)
         return jobData
 
+    def _getMostRecentAgentJobNum(self, uploadNum, agent):
+        """
+        Helper function: Retrieve job ID number for most recent agent of given type.
+        Arguments:
+            - uploadNum: ID number of upload.
+            - agent: name of agent to check for.
+        Returns job ID number or -1 if not found.
+        """
+        # FIXME given _getJobsForUpload, currently retrieves just first page
+        jobs = self._getJobsForUpload(uploadNum)
+        if jobs is None or jobs == []:
+            return -1
+        # will be returned in reverse chrono order, so we can just loop through
+        # and stop on the first one we come to
+        for job in jobs:
+            if job.agent == agent:
+                return job._id
+        return -1
+
     def _getJobSingleData(self, jobNum):
+        """Helper function: Retrieve job data for a single job."""
         endpoint = f"/repo/?mod=ajaxShowJobs&do=showSingleJob&jobId={jobNum}"
         results = self._get(endpoint)
         job = fossdriver.parser.parseSingleJobData(results.content)
         return job
 
-#    def _isJobDoneYet(self, jobNum):
+    def _isJobDoneYet(self, jobNum):
+        """Helper function: Return whether a specified job has completed yet."""
+        job = self._getJobSingleData(jobNum)
+        if job.status == "Completed":
+            return True
+        if "killed" in job.status:
+            return True
+        return False
 
     def StartReuserAgent(self, uploadNum, reusedUploadNum):
         """
@@ -255,3 +282,27 @@ class FossServer(object):
             "upload": str(uploadNum),
         }
         results = self._post(endpoint, values)
+
+    def IsAgentDone(self, uploadNum, agent):
+        """
+        Return whether the most recent agent for this upload has completed yet.
+        Arguments:
+            - uploadNum: ID number of upload.
+            - agent: name of agent to check for.
+        """
+        jobNum = self._getMostRecentAgentJobNum(uploadNum, agent)
+        return self._isJobDoneYet(jobNum)
+
+    def WaitUntilAgentIsDone(self, uploadNum, agent, pollSeconds=10):
+        """
+        Poll every __ seconds until the most recent agent for this upload has
+        completed.
+        Arguments:
+            - uploadNum: ID number of upload.
+            - agent: name of agent to check for.
+            - pollSeconds: number of seconds to wait between polling. Defaults to 10.
+        """
+        # FIXME consider adding a max # of tries before returning
+        jobNum = self._getMostRecentAgentJobNum(uploadNum, agent)
+        while not self._isJobDoneYet(jobNum):
+            time.sleep(pollSeconds)
