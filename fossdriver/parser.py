@@ -89,7 +89,7 @@ def parseUploadFormBuildToken(content):
 def parseFolderNumber(content, folderName):
     """Extract and return the folder ID number for the given folder name."""
     soup = bs4.BeautifulSoup(content, "lxml")
-    folders = soup.findAll("select", {"name":"folder"})
+    folders = soup.find_all("select", {"name":"folder"})
     if folders is None:
         return None
     for folder in folders:
@@ -97,3 +97,16 @@ def parseFolderNumber(content, folderName):
             if option.text.strip() == folderName:
                 return option["value"]
     return None
+
+def parseAnchorTagsForNewUploadNumber(content):
+    """Extract the new upload number from the response in a call to StartUpload."""
+    soup = bs4.BeautifulSoup(content, "lxml")
+    anchors = soup.find_all("a")
+    for anchor in anchors:
+        href = anchor.get("href", None)
+        if href is None:
+            continue
+        if "upload=" in href:
+            p = href.partition("upload=")
+            return int(p[2])
+    return -1

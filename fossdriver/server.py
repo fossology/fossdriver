@@ -202,4 +202,4 @@ class FossServer(object):
 
         results = self._postFile(endpoint, values)
         print("done")
-        print(results.content)
+        return fossdriver.parser.parseAnchorTagsForNewUploadNumber(results.content)
