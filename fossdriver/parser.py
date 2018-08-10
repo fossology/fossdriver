@@ -40,6 +40,7 @@ class ParsedUpload(object):
         self.name = ""
         self._id = -1
         self.folderId = -1
+        self.topTreeItemId = -1
         self.spdxTvUrl = ""
         self.spdxXmlUrl = ""
 
@@ -64,6 +65,13 @@ def parseUploadDataForFolderLineItem(lineItem):
     # the name is stored in the bold tag
     boldTag = soup.b
     u.name = boldTag.string
+    # the top tree item ID is stored in the a tag's href
+    aTag = soup.a
+    href = aTag.get("href", None)
+    if href is not None and "item=" in href:
+        p1 = href.partition("item=")
+        p2 = p1[2].partition("&show=")
+        u.topTreeItemId = int(p2[0])
     # search through option strings to get SPDX URLs
     opt = soup.find("option", {"title": "Generate SPDX report"})
     if opt is not None:
