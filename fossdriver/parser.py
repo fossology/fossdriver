@@ -44,6 +44,14 @@ class ParsedUpload(object):
         self.spdxTvUrl = ""
         self.spdxXmlUrl = ""
 
+class ParsedLicense(object):
+    def __init__(self):
+        self.name = ""
+        self._id = -1
+
+    def __repr__(self):
+        return f"ParsedLicense: {self.name} ({self._id})"
+
 class ParsedJob(object):
     def __init__(self):
         self._id = -1
@@ -94,6 +102,34 @@ def parseAllUploadDataForFolder(uploadData):
         if u is not None:
             parsedUploads.append(u)
     return parsedUploads
+
+def parseLicenseDataForOneLicense(lineItem):
+    """
+    Parses one line item for parsing the available licenses.
+    Returns a ParsedLicense object with the fields filled in.
+    """
+    lic = ParsedLicense()
+    # the license ID is stored in the option tag's value attribute
+    value = lineItem.get("value", -1)
+    lic._id = int(value)
+    # the license name is stored in the option tag's contents
+    lic.name = lineItem.string
+    return lic
+
+def parseAllLicenseData(content):
+    """
+    Parses all line items from a call to view-license.
+    Returns a list of all found ParsedLicense objects.
+    """
+    parsedLicenses = []
+    soup = bs4.BeautifulSoup(content, "lxml")
+    sel = soup.find("select", id="bulkLicense")
+    options = sel.find_all("option")
+    for lineItem in options:
+        lic = parseLicenseDataForOneLicense(lineItem)
+        if lic is not None:
+            parsedLicenses.append(lic)
+    return parsedLicenses
 
 def parseUploadFormBuildToken(content):
     """Extract and return the uploadformbuild token from previously-retrieved HTML."""

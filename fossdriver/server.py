@@ -211,8 +211,20 @@ class FossServer(object):
         )
 
         results = self._postFile(endpoint, values)
-        print("done")
         return fossdriver.parser.parseAnchorTagsForNewUploadNumber(results.content)
+
+    def GetLicenses(self, uploadNum, itemNum):
+        """
+        Obtain a dict of all licenses available in the Fossology server.
+        Requires upload and item numbers due to Fossology server interface.
+        Arguments:
+            - uploadNum: valid ID number for an existing upload.
+            - topTreeItemNum: valid ID number for an item in that upload.
+        """
+        endpoint = f"/repo/?mod=view-license&upload={uploadNum}&item={itemNum}"
+        results = self._get(endpoint)
+        licenses = fossdriver.parser.parseAllLicenseData(results.content)
+        return licenses
 
     def _getJobsForUpload(self, uploadNum):
         """Helper function: Retrieve job data for the given upload number."""
