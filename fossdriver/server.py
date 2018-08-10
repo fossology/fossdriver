@@ -42,6 +42,13 @@ import urllib
 
 import fossdriver.parser
 
+class BulkTextMatchAction(object):
+    def __init__(self):
+        self.licenseId = -1
+        self.licenseName = ""
+        # action should be either "add" or "remove"
+        self.action = ""
+
 class FossServer(object):
 
     def __init__(self, config):
@@ -226,6 +233,20 @@ class FossServer(object):
         licenses = fossdriver.parser.parseAllLicenseData(results.content)
         return licenses
 
+    def FindLicenseInParsedList(self, parsedLicenses, licName):
+        """
+        Find the ParsedLicense object with the given license name.
+        Assumes that the list of licenses is from a prior call to GetLicenses.
+        Arguments:
+            - parsedLicenses: a list of ParsedLicenses, likely obtained from GetLicenses.
+            - licName: license name to search for
+        Returns: ParsedLicense object with given name or None if not found.
+        """
+        for lic in parsedLicenses:
+            if lic.name == licName:
+                return lic
+        return None
+
     def _getJobsForUpload(self, uploadNum):
         """Helper function: Retrieve job data for the given upload number."""
         # FIXME currently retrieves just first page
@@ -290,7 +311,7 @@ class FossServer(object):
             "upload": str(uploadNum),
             "uploadToReuse": f"{reusedUploadNum},3",
         }
-        results = self._post(endpoint, values)
+        self._post(endpoint, values)
 
     def StartMonkAndNomosAgents(self, uploadNum):
         """
@@ -303,7 +324,7 @@ class FossServer(object):
             "agents[]": ["agent_monk", "agent_nomos"],
             "upload": str(uploadNum),
         }
-        results = self._post(endpoint, values)
+        self._post(endpoint, values)
 
     def StartSPDXTVReportGeneratorAgent(self, uploadNum):
         """
@@ -335,6 +356,43 @@ class FossServer(object):
         with open(outFilePath, "w") as f:
             f.write(results.content.decode("utf-8"))
         return True
+
+    def MakeBulkTextMatchAction(self, licenseId, licenseName, action):
+        """Create and return a BulkTextMatchAction object with the given data."""
+        # FIXME should this validate that the requested actions / lics are valid?
+        btma = BulkTextMatchAction()
+        btma.licenseId = licenseId
+        btma.licenseName = licenseName
+        btma.action = action
+        return btma
+
+    def StartBulkTextMatch(self, refText, itemNum, actions):
+        """
+        Start the monkbulk agent to run a bulk text match.
+        Arguments:
+            - refText: text to match on.
+            - itemNum: ID number for tree item within upload (NOT the upload number).
+            - actions: list of BulkTextMatchActions to perform.
+        """
+        endpoint = f"/repo/?mod=change-license-bulk"
+        # start building values
+        values = {
+            "refText": refText,
+            "bulkScope": "u",
+            "uploadTreeId": str(itemNum),
+            "forceDecision": "0",
+        }
+        # now, build and add bulkAction data rows
+        row = 0
+        for action in actions:
+            # FIXME should this validate that the requested actions / lics are valid?
+            rowPrefix = f"bulkAction[{row}]"
+            values[f"{rowPrefix}[licenseId]"] = str(action.licenseId)
+            values[f"{rowPrefix}[licenseName]"] = action.licenseName
+            values[f"{rowPrefix}[action]"] = action.action
+            row += 1
+        print(values)
+        self._post(endpoint, values)
 
     def IsAgentDone(self, uploadNum, agent):
         """
