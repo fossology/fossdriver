@@ -15,6 +15,33 @@ class Task(object):
         """Run the specified Task and return success or failure."""
         return False
 
+class CreateFolder(Task):
+    def __init__(self, server, newFolderName, parentFolderName):
+        super(CreateFolder, self).__init__(server, "CreateFolder")
+        self.newFolderName = newFolderName
+        self.parentFolderName = parentFolderName
+
+    def __repr__(self):
+        return f"Task: {self._type} (new folder {self.newFolderName}, parent folder {self.parentFolderName})"
+
+    def run(self):
+        logging.info(f"Running task: {self._type}")
+        """Create the folder and return success or failure."""
+        # FIXME check whether the folder already exists
+        # first, get the parent folder ID
+        parentFolderNum = self.server.GetFolderNum(self.parentFolderName)
+        if parentFolderNum is None or parentFolderNum == -1:
+            logging.error(f"Failed: could not retrieve folder number for parent folder {self.parentFolderName}")
+            return False
+
+        # now, create the folder
+        logging.info(f"Creating folder {self.newFolderName} in parent folder {self.parentFolderName} ({parentFolderNum})")
+        self.server.CreateFolder(parentFolderNum, self.newFolderName, self.newFolderName)
+        # FIXME check to see whether it was successfully created?
+
+        # note that no waiting is necessary because this is an instant action
+        return True
+
 class Upload(Task):
     def __init__(self, server, filePath, folderName):
         super(Upload, self).__init__(server, "Upload")
@@ -252,4 +279,4 @@ class SPDXTV(Task):
         return retval
 
 # to add:
-# CreateFolder
+# Copyright
