@@ -25,18 +25,19 @@ class Upload(Task):
         return f"Task: {self._type} (filePath {self.filePath}, folder {self.folderName})"
 
     def run(self):
+        logging.info(f"Running task: {self._type}")
         """Start the upload, wait until it completes and return success or failure."""
         # first, get the destination folder ID
         folderNum = self.server.GetFolderNum(self.folderName)
         if folderNum is None or folderNum == -1:
-            logging.info(f"Failed: could not retrieve folder number for folder {self.folderName}")
+            logging.error(f"Failed: could not retrieve folder number for folder {self.folderName}")
             return False
 
         # now, start the upload
         logging.info(f"Uploading {self.filePath} to folder {self.folderName} ({folderNum})")
         newUploadNum = self.server.UploadFile(self.filePath, folderNum)
         if newUploadNum is None or newUploadNum < 1:
-            logging.info(f"Failed: could not receive ID number for upload {self.filePath}")
+            logging.error(f"Failed: could not receive ID number for upload {self.filePath}")
             return False
         logging.info(f"Upload complete, {self.filePath} upload ID number is {newUploadNum}")
 
@@ -58,14 +59,15 @@ class Scanners(Task):
 
     def run(self):
         """Start the monk and nomos agents, wait until they complete and return success or failure."""
+        logging.info(f"Running task: {self._type}")
         # first, get the folder and then upload ID
         folderNum = self.server.GetFolderNum(self.folderName)
         if folderNum is None or folderNum == -1:
-            logging.info(f"Failed: could not retrieve folder number for folder {self.folderName}")
+            logging.error(f"Failed: could not retrieve folder number for folder {self.folderName}")
             return False
         uploadNum = self.server.GetUploadNum(folderNum, self.uploadName)
         if uploadNum is None or uploadNum == -1:
-            logging.info(f"Failed: could not retrieve upload number for upload {self.uploadName} in folder {self.folderName} ({folderNum})")
+            logging.error(f"Failed: could not retrieve upload number for upload {self.uploadName} in folder {self.folderName} ({folderNum})")
             return False
 
         # now, start the scanners
@@ -92,24 +94,25 @@ class Reuse(Task):
 
     def run(self):
         """Start the reuser agents, wait until it completes and return success or failure."""
+        logging.info(f"Running task: {self._type}")
         # first, get the old scan's folder and upload ID
         oldFolderNum = self.server.GetFolderNum(self.oldFolderName)
         if oldFolderNum is None or oldFolderNum == -1:
-            logging.info(f"Failed: could not retrieve folder number for old folder {self.oldFolderName}")
+            logging.error(f"Failed: could not retrieve folder number for old folder {self.oldFolderName}")
             return False
         oldUploadNum = self.server.GetUploadNum(oldFolderNum, self.oldUploadName)
         if oldUploadNum is None or oldUploadNum == -1:
-            logging.info(f"Failed: could not retrieve upload number for old upload {self.oldUploadName} in folder {self.oldFolderName} ({oldFolderNum})")
+            logging.error(f"Failed: could not retrieve upload number for old upload {self.oldUploadName} in folder {self.oldFolderName} ({oldFolderNum})")
             return False
 
         # next, get the new scan's folder and upload ID
         newFolderNum = self.server.GetFolderNum(self.newFolderName)
         if newFolderNum is None or newFolderNum == -1:
-            logging.info(f"Failed: could not retrieve folder number for new folder {self.newFolderName}")
+            logging.error(f"Failed: could not retrieve folder number for new folder {self.newFolderName}")
             return False
         newUploadNum = self.server.GetUploadNum(newFolderNum, self.newUploadName)
         if newUploadNum is None or newUploadNum == -1:
-            logging.info(f"Failed: could not retrieve upload number for new upload {self.newUploadName} in folder {self.newFolderName} ({newFolderNum})")
+            logging.error(f"Failed: could not retrieve upload number for new upload {self.newUploadName} in folder {self.newFolderName} ({newFolderNum})")
             return False
 
         # now, start the reuser agent
@@ -122,7 +125,97 @@ class Reuse(Task):
 
         return True
 
+class BulkTextMatch(Task):
+    def __init__(self, server, uploadName, folderName, refText):
+        super(BulkTextMatch, self).__init__(server, "BulkTextMatch")
+        self.uploadName = uploadName
+        self.folderName = folderName
+        self.refText = refText
+        # actionTuples will be list of (str: licenseName, str: "add" or "remove")
+        self.actionTuples = []
+        self.parsedLicenses = None
+
+    def add(self, licenseName):
+        """Create an "add" action and include it in the bulk actions."""
+        actionTuple = (licenseName, "add")
+        self.actionTuples.append(actionTuple)
+
+    def remove(self, licenseName):
+        """Create a "remove" action and include it in the bulk actions."""
+        actionTuple = (licenseName, "remove")
+        self.actionTuples.append(actionTuple)
+
+    def _findLicenseID(self, licenseName):
+        """Helper function: retrieve license ID for given license name."""
+        # FIXME will only get licenses from server once, and will then cache
+        # FIXME the result. this will be faster than retrieving the full list
+        # FIXME every time an action is added / removed, but means that some
+        # FIXME license changes on the server may not be reflected here.
+
+        if self.parsedLicenses is None:
+            # need to get upload ID + upload item ID so we can get licenses
+            folderNum = self.server.GetFolderNum(self.folderName)
+            if folderNum is None or folderNum == -1:
+                logging.error(f"Failed: could not retrieve folder number for folder {self.folderName} when getting licenses")
+                return -1
+            u = self.server._getUploadData(folderNum, self.uploadName, False)
+            if u is None:
+                logging.error(f"Failed: could not retrieve upload data for upload {self.uploadName} when getting licenses")
+                return -1
+            self.parsedLicenses = self.server.GetLicenses(u._id, u.topTreeItemId)
+            if self.parsedLicenses is None or self.parsedLicenses == []:
+                logging.error(f"Failed: could not retrieve licenses for upload {self.uploadName}")
+                return -1
+
+        lic = self.server.FindLicenseInParsedList(self.parsedLicenses, licenseName)
+        return lic._id
+
+    def _makeRealAction(self, licenseName, actionType):
+        """Helper function: make an action entry at the time the Task is being run."""
+        licenseId = self._findLicenseID(licenseName)
+        if licenseId == -1:
+            logging.error(f"Failed: could not get license ID for license {licenseName}")
+            return None
+        return self.server.MakeBulkTextMatchAction(licenseId, licenseName, actionType)
+
+    def run(self):
+        """Start the monkbulk agent, wait until it completes and return success or failure."""
+        logging.info(f"Running task: {self._type}")
+        # first, get the folder and then upload ID, and full upload data
+        folderNum = self.server.GetFolderNum(self.folderName)
+        if folderNum is None or folderNum == -1:
+            logging.error(f"Failed: could not retrieve folder number for folder {self.folderName}")
+            return False
+        uploadNum = self.server.GetUploadNum(folderNum, self.uploadName)
+        if uploadNum is None or uploadNum == -1:
+            logging.error(f"Failed: could not retrieve upload number for upload {self.uploadName} in folder {self.folderName} ({folderNum})")
+            return False
+        u = self.server._getUploadData(folderNum, self.uploadName, False)
+        if u is None:
+            logging.error(f"Failed: could not retrieve upload data for upload {self.uploadName} when getting licenses")
+            return -1
+
+        # next, create the real actions list from the action tuples
+        logging.info(f"=====> actionTuples: {self.actionTuples}")
+        actionList = []
+        for (licenseName, actionType) in self.actionTuples:
+            a = self._makeRealAction(licenseName, actionType)
+            if a is None:
+                logging.error(f"Failed: could not create action for ({licenseName}, {actionType}) for upload {self.uploadName}")
+                return False
+            actionList.append(a)
+        logging.info(f"=====> actionList: {actionList}")
+
+        # now, start the bulk text match agent
+        logging.info(f"Running monkbulk agent on upload {self.uploadName} ({uploadNum})")
+        self.server.StartBulkTextMatch(self.refText, u.topTreeItemId, actionList)
+
+        # and wait until agent finishes
+        logging.info(f"Waiting for monkbulk to finish for upload {self.uploadName} ({uploadNum})")
+        self.server.WaitUntilAgentIsDone(uploadNum, "monkbulk", pollSeconds=5)
+
+        return True
+
 # to add:
 # CreateFolder
-# BulkTextMatch
 # SPDXTV

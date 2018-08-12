@@ -49,6 +49,9 @@ class BulkTextMatchAction(object):
         # action should be either "add" or "remove"
         self.action = ""
 
+    def __repr__(self):
+        return f"BulkTextMatchAction: [{self.action}] {self.licenseName} ({self.licenseId})"
+
 class FossServer(object):
 
     def __init__(self, config):
