@@ -1,0 +1,128 @@
+# Copyright The Linux Foundation
+# SPDX-License-Identifier: BSD-3-Clause
+
+import logging
+
+class Task(object):
+    def __init__(self, server, _type="unspecified"):
+        self.server = server
+        self._type = _type
+
+    def __repr__(self):
+        return f"Task: {self._type}"
+
+    def run(self):
+        """Run the specified Task and return success or failure."""
+        return False
+
+class Upload(Task):
+    def __init__(self, server, filePath, folderName):
+        super(Upload, self).__init__(server, "Upload")
+        self.filePath = filePath
+        self.folderName = folderName
+
+    def __repr__(self):
+        return f"Task: {self._type} (filePath {self.filePath}, folder {self.folderName})"
+
+    def run(self):
+        """Start the upload, wait until it completes and return success or failure."""
+        # first, get the destination folder ID
+        folderNum = self.server.GetFolderNum(self.folderName)
+        if folderNum is None or folderNum == -1:
+            logging.info(f"Failed: could not retrieve folder number for folder {self.folderName}")
+            return False
+
+        # now, start the upload
+        logging.info(f"Uploading {self.filePath} to folder {self.folderName} ({folderNum})")
+        newUploadNum = self.server.UploadFile(self.filePath, folderNum)
+        if newUploadNum is None or newUploadNum < 1:
+            logging.info(f"Failed: could not receive ID number for upload {self.filePath}")
+            return False
+        logging.info(f"Upload complete, {self.filePath} upload ID number is {newUploadNum}")
+
+        # and wait until upload finishes unpacking
+        logging.info(f"Waiting for upload {newUploadNum} to unpack")
+        self.server.WaitUntilAgentIsDone(newUploadNum, "ununpack", pollSeconds=5)
+        self.server.WaitUntilAgentIsDone(newUploadNum, "adj2nest", pollSeconds=5)
+
+        return True
+
+class Scanners(Task):
+    def __init__(self, server, uploadName, folderName):
+        super(Scanners, self).__init__(server, "Scanners")
+        self.uploadName = uploadName
+        self.folderName = folderName
+
+    def __repr__(self):
+        return f"Task: {self._type} (uploadName {self.uploadName}, folder {self.folderName})"
+
+    def run(self):
+        """Start the monk and nomos agents, wait until they complete and return success or failure."""
+        # first, get the folder and then upload ID
+        folderNum = self.server.GetFolderNum(self.folderName)
+        if folderNum is None or folderNum == -1:
+            logging.info(f"Failed: could not retrieve folder number for folder {self.folderName}")
+            return False
+        uploadNum = self.server.GetUploadNum(folderNum, self.uploadName)
+        if uploadNum is None or uploadNum == -1:
+            logging.info(f"Failed: could not retrieve upload number for upload {self.uploadName} in folder {self.folderName} ({folderNum})")
+            return False
+
+        # now, start the scanners
+        logging.info(f"Running monk and nomos scanners on upload {self.uploadName} ({uploadNum})")
+        self.server.StartMonkAndNomosAgents(uploadNum)
+
+        # and wait until both scanners finish
+        logging.info(f"Waiting for monk and nomos to finish for upload {self.uploadName} ({uploadNum})")
+        self.server.WaitUntilAgentIsDone(uploadNum, "monk", pollSeconds=5)
+        self.server.WaitUntilAgentIsDone(uploadNum, "nomos", pollSeconds=5)
+
+        return True
+
+class Reuse(Task):
+    def __init__(self, server, newUploadName, newFolderName, oldUploadName, oldFolderName):
+        super(Reuse, self).__init__(server, "Reuse")
+        self.oldUploadName = oldUploadName
+        self.oldFolderName = oldFolderName
+        self.newUploadName = newUploadName
+        self.newFolderName = newFolderName
+
+    def __repr__(self):
+        return f"Task: {self._type} (old: uploadName {self.oldUploadName}, folder {self.oldFolderName}; new: uploadName {self.newUploadName}, folder {self.newFolderName})"
+
+    def run(self):
+        """Start the reuser agents, wait until it completes and return success or failure."""
+        # first, get the old scan's folder and upload ID
+        oldFolderNum = self.server.GetFolderNum(self.oldFolderName)
+        if oldFolderNum is None or oldFolderNum == -1:
+            logging.info(f"Failed: could not retrieve folder number for old folder {self.oldFolderName}")
+            return False
+        oldUploadNum = self.server.GetUploadNum(oldFolderNum, self.oldUploadName)
+        if oldUploadNum is None or oldUploadNum == -1:
+            logging.info(f"Failed: could not retrieve upload number for old upload {self.oldUploadName} in folder {self.oldFolderName} ({oldFolderNum})")
+            return False
+
+        # next, get the new scan's folder and upload ID
+        newFolderNum = self.server.GetFolderNum(self.newFolderName)
+        if newFolderNum is None or newFolderNum == -1:
+            logging.info(f"Failed: could not retrieve folder number for new folder {self.newFolderName}")
+            return False
+        newUploadNum = self.server.GetUploadNum(newFolderNum, self.newUploadName)
+        if newUploadNum is None or newUploadNum == -1:
+            logging.info(f"Failed: could not retrieve upload number for new upload {self.newUploadName} in folder {self.newFolderName} ({newFolderNum})")
+            return False
+
+        # now, start the reuser agent
+        logging.info(f"Running reuser agent on upload {self.newUploadName} ({newUploadNum}) reusing old upload {self.oldUploadName} ({oldUploadNum})")
+        self.server.StartReuserAgent(newUploadNum, oldUploadNum)
+
+        # and wait until reuser finishes
+        logging.info(f"Waiting for reuser to finish for upload {self.newUploadName} ({newUploadNum}) reusing old upload {self.oldUploadName} ({oldUploadNum})")
+        self.server.WaitUntilAgentIsDone(newUploadNum, "reuser", pollSeconds=5)
+
+        return True
+
+# to add:
+# CreateFolder
+# BulkTextMatch
+# SPDXTV
