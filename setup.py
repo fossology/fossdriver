@@ -12,7 +12,7 @@ setuptools.setup(
     description="Python interface to control a FOSSology server",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/fossdriver",
+    url="https://gitlab.com/swinslow/fossdriver",
     packages=setuptools.find_packages(),
     classifiers=(
         "Programming Language :: Python :: 3",
