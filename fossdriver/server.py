@@ -328,6 +328,19 @@ class FossServer(object):
         }
         self._post(endpoint, values)
 
+    def StartCopyrightAgent(self, uploadNum):
+        """
+        Start the copyright agent.
+        Arguments:
+            - uploadNum: ID number of upload to analyze.
+        """
+        endpoint = "/repo/?mod=agent_add"
+        values = {
+            "agents[]": "agent_copyright",
+            "upload": str(uploadNum),
+        }
+        self._post(endpoint, values)
+
     def StartSPDXTVReportGeneratorAgent(self, uploadNum):
         """
         Start the spdx2tv agent to generate an SPDX tag-value report.

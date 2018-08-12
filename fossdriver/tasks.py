@@ -108,6 +108,38 @@ class Scanners(Task):
 
         return True
 
+class Copyright(Task):
+    def __init__(self, server, uploadName, folderName):
+        super(Copyright, self).__init__(server, "Copyright")
+        self.uploadName = uploadName
+        self.folderName = folderName
+
+    def __repr__(self):
+        return f"Task: {self._type} (uploadName {self.uploadName}, folder {self.folderName})"
+
+    def run(self):
+        """Start the copyright agent, wait until it completes and return success or failure."""
+        logging.info(f"Running task: {self._type}")
+        # first, get the folder and then upload ID
+        folderNum = self.server.GetFolderNum(self.folderName)
+        if folderNum is None or folderNum == -1:
+            logging.error(f"Failed: could not retrieve folder number for folder {self.folderName}")
+            return False
+        uploadNum = self.server.GetUploadNum(folderNum, self.uploadName)
+        if uploadNum is None or uploadNum == -1:
+            logging.error(f"Failed: could not retrieve upload number for upload {self.uploadName} in folder {self.folderName} ({folderNum})")
+            return False
+
+        # now, start the scanners
+        logging.info(f"Running copyright agent on upload {self.uploadName} ({uploadNum})")
+        self.server.StartCopyrightAgent(uploadNum)
+
+        # and wait until both scanners finish
+        logging.info(f"Waiting for copyright agent to finish for upload {self.uploadName} ({uploadNum})")
+        self.server.WaitUntilAgentIsDone(uploadNum, "copyright", pollSeconds=5)
+
+        return True
+
 class Reuse(Task):
     def __init__(self, server, newUploadName, newFolderName, oldUploadName, oldFolderName):
         super(Reuse, self).__init__(server, "Reuse")
