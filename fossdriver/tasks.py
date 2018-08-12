@@ -216,6 +216,40 @@ class BulkTextMatch(Task):
 
         return True
 
+class SPDXTV(Task):
+    def __init__(self, server, uploadName, folderName, outFilePath):
+        super(SPDXTV, self).__init__(server, "SPDXTV")
+        self.uploadName = uploadName
+        self.folderName = folderName
+        self.outFilePath = outFilePath
+
+    def __repr__(self):
+        return f"Task: {self._type} (uploadName {self.uploadName}, folder {self.folderName}) to file {self.outFileName}"
+
+    def run(self):
+        """Start the spdx2tv agents, wait until it completes and return success or failure."""
+        logging.info(f"Running task: {self._type}")
+        # first, get the folder and then upload ID
+        folderNum = self.server.GetFolderNum(self.folderName)
+        if folderNum is None or folderNum == -1:
+            logging.error(f"Failed: could not retrieve folder number for folder {self.folderName}")
+            return False
+        uploadNum = self.server.GetUploadNum(folderNum, self.uploadName)
+        if uploadNum is None or uploadNum == -1:
+            logging.error(f"Failed: could not retrieve upload number for upload {self.uploadName} in folder {self.folderName} ({folderNum})")
+            return False
+
+        # now, start the export agent
+        logging.info(f"Running spdx2tv agent on upload {self.uploadName} ({uploadNum})")
+        self.server.StartSPDXTVReportGeneratorAgent(uploadNum)
+
+        # wait until the export agent finishes
+        logging.info(f"Waiting for spdx2tv to finish for upload {self.uploadName} ({uploadNum})")
+        self.server.WaitUntilAgentIsDone(uploadNum, "spdx2tv", pollSeconds=5)
+
+        # finally, get and save the SPDX file
+        retval = self.server.GetSPDXTVReport(uploadNum, self.outFilePath)
+        return retval
+
 # to add:
 # CreateFolder
-# SPDXTV
