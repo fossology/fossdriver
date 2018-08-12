@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import json
+import logging
 
 class FossConfig(object):
 
@@ -23,17 +24,17 @@ class FossConfig(object):
                 # check whether we got everything we expected
                 isValid = True
                 if self.serverUrl == "":
-                    print(f"serverUrl not found in config file")
+                    logging.error(f"serverUrl not found in config file")
                     isValid = False
                 if self.username == "":
-                    print(f"username not found in config file")
+                    logging.error(f"username not found in config file")
                     isValid = False
                 if self.password == "":
-                    print(f"password not found in config file")
+                    logging.error(f"password not found in config file")
                     isValid = False
 
                 return isValid
 
         except json.decoder.JSONDecodeError as e:
-            print(f"Error loading or parsing {configFilename}: {str(e)}")
+            logging.error(f"Error loading or parsing {configFilename}: {str(e)}")
             return False

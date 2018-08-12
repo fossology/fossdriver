@@ -191,7 +191,6 @@ class FossServer(object):
         """
         endpoint = "/repo/?mod=upload_file"
         basename = os.path.basename(os.path.expanduser(filePath))
-        print(f"Uploading {basename} to folder {folderNum}...")
 
         # determine mime type
         mime = MimeTypes()
@@ -391,7 +390,6 @@ class FossServer(object):
             values[f"{rowPrefix}[licenseName]"] = action.licenseName
             values[f"{rowPrefix}[action]"] = action.action
             row += 1
-        print(values)
         self._post(endpoint, values)
 
     def IsAgentDone(self, uploadNum, agent):
