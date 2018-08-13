@@ -255,7 +255,6 @@ class BulkTextMatch(Task):
             return -1
 
         # next, create the real actions list from the action tuples
-        logging.info(f"=====> actionTuples: {self.actionTuples}")
         actionList = []
         for (licenseName, actionType) in self.actionTuples:
             a = self._makeRealAction(licenseName, actionType)
@@ -263,7 +262,6 @@ class BulkTextMatch(Task):
                 logging.error(f"Failed: could not create action for ({licenseName}, {actionType}) for upload {self.uploadName}")
                 return False
             actionList.append(a)
-        logging.info(f"=====> actionList: {actionList}")
 
         # now, start the bulk text match agent
         logging.info(f"Running monkbulk agent on upload {self.uploadName} ({uploadNum})")
