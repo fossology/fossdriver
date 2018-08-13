@@ -1,10 +1,21 @@
 # fossdriver
 
-fossdriver is intended to enable scriptable control of a [FOSSology server](https://www.fossology.org). (fossdriver doesn't contain a FOSSology server; you'll have to go set one up yourself.)
+fossdriver is intended to enable control of a [FOSSology server](https://www.fossology.org) from Python programs.
+
+This package is significantly based on, and inspired by, the excellent [fossup](https://gitlab.com/toganlabs/fossup) FOSSology Uploader package from Togán Labs.
+
+## Requirements
+
+fossdriver requires a [FOSSology server](https://www.fossology.org) to talk to. (fossdriver doesn't contain a FOSSology server; you'll have to go set one up yourself.)
 
 The current version of fossdriver is designed for use with a FOSSology server version 3.3.0, which is the now-current release of FOSSology. It has not been tested on other versions.
 
-This package is significantly based on, and inspired by, the excellent [fossup](https://gitlab.com/toganlabs/fossup) FOSSology Uploader package from Togán Labs.
+fossdriver requires Python 3.6+ or later.
+
+fossdriver makes use of, and installs if not present, the following dependencies (and their subdependencies, of course):
+
+- **requests** and **requests_toolbox** - for communicating with the server
+- **bs4 (BeautifulSoup)** and **lxml** - for parsing server responses
 
 ## Installation
 
@@ -30,7 +41,7 @@ Note that the URL **should NOT** include the `/repo/` portion of the URL that FO
 
 ## Usage
 
-1) In your python project, import the fossdriver objects:
+1) In your Python project, import the fossdriver objects:
 
 ```
 from fossdriver.config import FossConfig
