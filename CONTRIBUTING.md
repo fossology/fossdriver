@@ -1,10 +1,20 @@
-```
 SPDX-License-Identifier: BSD-3-Clause
-```
+
+# Contributing
 
 All contributions should include a "Signed-off-by" line in the commit message.
 
 This indicates that the contribution is made pursuant to the [Developer Certificate of Origin (DCO)](https://developercertificate.org/), a copy of which is included below.
+
+## License information
+
+New files should include a [short-form SPDX ID](https://spdx.org/ids) at the top, indicating the project license, which is currently [BSD-3-Clause](https://spdx.org/licenses/BSD-3-Clause.html). This should look like the following:
+
+```
+# SPDX-License-Identifier: BSD-3-Clause
+```
+
+## Developer Certificate of Origin (DCO)
 
 ```
 Developer Certificate of Origin
