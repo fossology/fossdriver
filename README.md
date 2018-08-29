@@ -90,8 +90,8 @@ Contributions to fossdriver are welcome. Please see the CONTRIBUTING.md file for
 
 ## License
 
-fossdriver is provided under the [BSD-3-Clause](https://spdx.org/licenses/BSD-3-Clause.html) license, a copy of which is included in the LICENSE file.
+fossdriver is provided under a choice of either the [MIT](https://spdx.org/licenses/MIT.html) license or the [BSD-3-Clause](https://spdx.org/licenses/BSD-3-Clause.html) license, at the licensee's option. Copies of these licenses are included in the LICENSE file.
 
 ```
-SPDX-License-Identifier: BSD-3-Clause
+SPDX-License-Identifier: BSD-3-Clause OR MIT
 ```

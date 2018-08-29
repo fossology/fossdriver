@@ -1,5 +1,5 @@
-# Copyright The Linux Foundation
-# SPDX-License-Identifier: BSD-3-Clause
+# Copyright Contributors to the fossdriver project.
+# SPDX-License-Identifier: BSD-3-Clause OR MIT
 
 import logging
 
