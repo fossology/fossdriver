@@ -8,10 +8,10 @@ This indicates that the contribution is made pursuant to the [Developer Certific
 
 ## License information
 
-New files should include a [short-form SPDX ID](https://spdx.org/ids) at the top, indicating the project license, which is currently [BSD-3-Clause](https://spdx.org/licenses/BSD-3-Clause.html). This should look like the following:
+New files should include a [short-form SPDX ID](https://spdx.org/ids) at the top, indicating the project license, which is currently BSD-3-Clause OR MIT. This should look like the following:
 
 ```
-# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-License-Identifier: BSD-3-Clause OR MIT
 ```
 
 ## Developer Certificate of Origin (DCO)
