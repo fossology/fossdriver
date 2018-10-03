@@ -1,0 +1,10 @@
+# Copyright Contributors to the fossdriver project.
+# SPDX-License-Identifier: BSD-3-Clause OR MIT
+
+__pycache__
+*.pyc
+*.egg-info/*
+.DS_Store
+scratch/*
+.vscode/*
+runtest.py
