@@ -94,6 +94,8 @@ def parseAllLicenseData(content):
     parsedLicenses = []
     soup = bs4.BeautifulSoup(content, "lxml")
     sel = soup.find("select", id="bulkLicense")
+    if sel is None:
+        return []
     options = sel.find_all("option")
     for lineItem in options:
         lic = parseLicenseDataForOneLicense(lineItem)
