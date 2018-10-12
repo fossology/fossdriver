@@ -17,10 +17,11 @@ setuptools.setup(
     classifiers=(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-        # non-standard classifiers to designate specific license
+        # non-standard classifiers to designate specific license choices
         "License :: OSI Approved :: BSD-3-Clause License",
-        "SPDX-License-Identifier: BSD-3-Clause",
+        "SPDX-License-Identifier: BSD-3-Clause OR MIT",
     ),
     install_requires=[
         "requests == 2.19.1",
