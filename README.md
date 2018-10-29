@@ -77,8 +77,13 @@ Upload(server, "archive.zip", "Test Folder").run()
 # start the Monk and Nomos scanners
 Scanners(server, "archive.zip", "Test Folder").run()
 
+# also run the Copyright statement scanner
+Copyright(server, "archive.zip", "Test Folder").run()
+
 # also reuse prior results from an earlier scan
 Reuse(server, "archive.zip", "Test Folder", "earlier-scan-1", "Earlier Scan Folder").run()
+
+# see docs/BulkTextMatch.md for details on how to use BulkTextMatch
 
 # and export an SPDX tag-value file
 SPDXTV(server, "archive.zip", "Test Folder", "/tmp/archive.spdx").run()
