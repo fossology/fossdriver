@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="fossdriver",
-    version="0.0.1",
+    version="0.0.2",
     author="Steve Winslow",
     author_email="swinslow@gmail.com",
     description="Python interface to control a FOSSology server",
@@ -15,6 +15,7 @@ setuptools.setup(
     url="https://github.com/fossology/fossdriver",
     packages=setuptools.find_packages(),
     classifiers=(
+        "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: BSD License",
         "License :: OSI Approved :: MIT License",

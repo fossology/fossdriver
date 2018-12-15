@@ -22,7 +22,7 @@ class BulkTextMatchAction(object):
         self.action = ""
 
     def __repr__(self):
-	return "BulkTextMatchAction: [{}], [{}], [{}]".format(self.action, self.licenseName, self.licenseId)
+        return "BulkTextMatchAction: [{}], [{}], [{}]".format(self.action, self.licenseName, self.licenseId)
 
 class FossServer(object):
 
@@ -169,10 +169,10 @@ class FossServer(object):
 
         # determine mime type
         mime = MimeTypes()
-	if sys.version_info > (3, 4):
-	    murl = urllib.request.pathname2url(filePath)
-	else:
-	    murl = urllib.pathname2url(filePath)
+        if sys.version_info > (3, 4):
+            murl = urllib.request.pathname2url(filePath)
+        else:
+            murl = urllib.pathname2url(filePath)
         mime_type = mime.guess_type(murl)
 
         # retrieve custom token for upload
@@ -286,7 +286,7 @@ class FossServer(object):
         values = {
             "agents[]": "agent_reuser",
             "upload": str(uploadNum),
-	    "uploadToReuse": "{}, 3".format(reusedUploadNum)
+            "uploadToReuse": "{}, 3".format(reusedUploadNum),
         }
         self._post(endpoint, values)
 
@@ -343,10 +343,10 @@ class FossServer(object):
         # now, go get the actual report
         endpoint = "/repo/?mod=download&report={}".format(job.reportId)
         results = self._get(endpoint)
-	if sys.version_info > (3, 4):
+        if sys.version_info > (3, 4):
             with open(outFilePath, "w") as f:
                 f.write(results.content.decode("utf-8"))
-	else:
+        else:
             with io.open(outFilePath, "w", encoding="utf-8") as f:
                 f.write(results.content.decode("utf-8"))
         return True
@@ -380,10 +380,10 @@ class FossServer(object):
         row = 0
         for action in actions:
             # FIXME should this validate that the requested actions / lics are valid?
-	    rowPrefix = "bulkAction[{}]".format(row)
-	    values["{}[licenseId]".format(rowPrefix)] = str(action.licenseId)
-	    values["{}[licenseName]".format(rowPrefix)] = action.licenseName
-	    values["{}[action]".format(rowPrefix)] = action.action
+            rowPrefix = "bulkAction[{}]".format(row)
+            values["{}[licenseId]".format(rowPrefix)] = str(action.licenseId)
+            values["{}[licenseName]".format(rowPrefix)] = action.licenseName
+            values["{}[action]".format(rowPrefix)] = action.action
             row += 1
         self._post(endpoint, values)
 

@@ -10,7 +10,8 @@ fossdriver requires a [FOSSology server](https://www.fossology.org) to talk to. 
 
 The current version of fossdriver is designed for use with a FOSSology server version 3.3.0, which is the now-current release of FOSSology. It has not been tested on other versions.
 
-fossdriver requires Python 3.6+ or later.
+fossdriver works with Python 3 or Python 2. Many thanks to Sinéad Redmond of
+Togán Labs for enabling Python 2 support.
 
 fossdriver makes use of, and installs if not present, the following dependencies (and their subdependencies, of course):
 
