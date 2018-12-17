@@ -9,6 +9,8 @@ import requests
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 import time
 import urllib
+import io
+import sys
 
 import fossdriver.parser
 
@@ -20,7 +22,7 @@ class BulkTextMatchAction(object):
         self.action = ""
 
     def __repr__(self):
-        return f"BulkTextMatchAction: [{self.action}] {self.licenseName} ({self.licenseId})"
+        return "BulkTextMatchAction: [{}], [{}], [{}]".format(self.action, self.licenseName, self.licenseId)
 
 class FossServer(object):
 
@@ -102,7 +104,7 @@ class FossServer(object):
         # FIXME note that using browse-processPost means we may only get
         # FIXME the first 100 uploads in the folder. may be able to check
         # FIXME iTotalDisplayRecords and loop to get more if needed
-        endpoint = f"/repo/?mod=browse-processPost&folder={folderNum}&iDisplayStart=0&iDisplayLength=100"
+        endpoint = "/repo/?mod=browse-processPost&folder={}&iDisplayStart=0&iDisplayLength=100".format(folderNum)
         results = self._get(endpoint)
         rj = json.loads(results.content)
         uploadData = rj.get("aaData", None)
@@ -167,7 +169,10 @@ class FossServer(object):
 
         # determine mime type
         mime = MimeTypes()
-        murl = urllib.request.pathname2url(filePath)
+        if sys.version_info > (3, 4):
+            murl = urllib.request.pathname2url(filePath)
+        else:
+            murl = urllib.pathname2url(filePath)
         mime_type = mime.guess_type(murl)
 
         # retrieve custom token for upload
@@ -200,7 +205,7 @@ class FossServer(object):
             - uploadNum: valid ID number for an existing upload.
             - topTreeItemNum: valid ID number for an item in that upload.
         """
-        endpoint = f"/repo/?mod=view-license&upload={uploadNum}&item={itemNum}"
+        endpoint = "/repo/?mod=view-license&upload={}&item={}".format(uploadNum, itemNum)
         results = self._get(endpoint)
         licenses = fossdriver.parser.parseAllLicenseData(results.content)
         return licenses
@@ -254,7 +259,7 @@ class FossServer(object):
 
     def _getJobSingleData(self, jobNum):
         """Helper function: Retrieve job data for a single job."""
-        endpoint = f"/repo/?mod=ajaxShowJobs&do=showSingleJob&jobId={jobNum}"
+        endpoint = "/repo/?mod=ajaxShowJobs&do=showSingleJob&jobId={}".format(jobNum)
         results = self._get(endpoint)
         job = fossdriver.parser.parseSingleJobData(results.content)
         return job
@@ -281,7 +286,7 @@ class FossServer(object):
         values = {
             "agents[]": "agent_reuser",
             "upload": str(uploadNum),
-            "uploadToReuse": f"{reusedUploadNum},3",
+            "uploadToReuse": "{}, 3".format(reusedUploadNum),
         }
         self._post(endpoint, values)
 
@@ -317,7 +322,7 @@ class FossServer(object):
         Arguments:
             - uploadNum: ID number of upload to export as tag-value.
         """
-        endpoint = f"/repo/?mod=ui_spdx2&outputFormat=spdx2tv&upload={uploadNum}"
+        endpoint = "/repo/?mod=ui_spdx2&outputFormat=spdx2tv&upload={}".format(uploadNum)
         self._get(endpoint)
 
     def GetSPDXTVReport(self, uploadNum, outFilePath):
@@ -336,10 +341,14 @@ class FossServer(object):
             return False
 
         # now, go get the actual report
-        endpoint = f"/repo/?mod=download&report={job.reportId}"
+        endpoint = "/repo/?mod=download&report={}".format(job.reportId)
         results = self._get(endpoint)
-        with open(outFilePath, "w") as f:
-            f.write(results.content.decode("utf-8"))
+        if sys.version_info > (3, 4):
+            with open(outFilePath, "w") as f:
+                f.write(results.content.decode("utf-8"))
+        else:
+            with io.open(outFilePath, "w", encoding="utf-8") as f:
+                f.write(results.content.decode("utf-8"))
         return True
 
     def MakeBulkTextMatchAction(self, licenseId, licenseName, action):
@@ -359,7 +368,7 @@ class FossServer(object):
             - itemNum: ID number for tree item within upload (NOT the upload number).
             - actions: list of BulkTextMatchActions to perform.
         """
-        endpoint = f"/repo/?mod=change-license-bulk"
+        endpoint = "/repo/?mod=change-license-bulk"
         # start building values
         values = {
             "refText": refText,
@@ -371,10 +380,10 @@ class FossServer(object):
         row = 0
         for action in actions:
             # FIXME should this validate that the requested actions / lics are valid?
-            rowPrefix = f"bulkAction[{row}]"
-            values[f"{rowPrefix}[licenseId]"] = str(action.licenseId)
-            values[f"{rowPrefix}[licenseName]"] = action.licenseName
-            values[f"{rowPrefix}[action]"] = action.action
+            rowPrefix = "bulkAction[{}]".format(row)
+            values["{}[licenseId]".format(rowPrefix)] = str(action.licenseId)
+            values["{}[licenseName]".format(rowPrefix)] = action.licenseName
+            values["{}[action]".format(rowPrefix)] = action.action
             row += 1
         self._post(endpoint, values)
 

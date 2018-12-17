@@ -20,7 +20,7 @@ class ParsedLicense(object):
         self._id = -1
 
     def __repr__(self):
-        return f"ParsedLicense: {self.name} ({self._id})"
+        return "ParsedLicense: {} ({})".format(self.name, self._id)
 
 class ParsedJob(object):
     def __init__(self):
@@ -30,7 +30,7 @@ class ParsedJob(object):
         self.reportId = -1
 
     def __repr__(self):
-        return f"Job {self._id}: {self.agent}, {self.status}"
+        return "Job {}: {}, {}".format(self._id, self.agent, self.status)
 
 def parseUploadDataForFolderLineItem(lineItem):
     """
@@ -109,7 +109,7 @@ def parseUploadFormBuildToken(content):
     try:
         return soup.find("input", {"name": "uploadformbuild"}).get("value", None)
     except Exception as e:
-        logging.warn(f"Couldn't extract uploadformbuild token: {str(e)}")
+        logging.warn("Couldn't extract uploadformbuild token: {}".format(str(e)))
         return None
 
 def parseFolderNumber(content, folderName):

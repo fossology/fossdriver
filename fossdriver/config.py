@@ -24,17 +24,17 @@ class FossConfig(object):
                 # check whether we got everything we expected
                 isValid = True
                 if self.serverUrl == "":
-                    logging.error(f"serverUrl not found in config file")
+                    logging.error("serverUrl not found in config file")
                     isValid = False
                 if self.username == "":
-                    logging.error(f"username not found in config file")
+                    logging.error("username not found in config file")
                     isValid = False
                 if self.password == "":
-                    logging.error(f"password not found in config file")
+                    logging.error("password not found in config file")
                     isValid = False
 
                 return isValid
 
-        except json.decoder.JSONDecodeError as e:
-            logging.error(f"Error loading or parsing {configFilename}: {str(e)}")
+        except ValueError as e:
+            logging.error("Error loading or parsing {}: {}".format(configFilename, str(e)))
             return False
