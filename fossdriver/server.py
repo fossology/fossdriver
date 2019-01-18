@@ -197,6 +197,41 @@ class FossServer(object):
         results = self._postFile(endpoint, values)
         return fossdriver.parser.parseAnchorTagsForNewUploadNumber(results.content)
 
+    def UploadFromVCS(self, urlOfRepo, vcsKind, repoUserName, repoPassword, folderNum):
+        """
+        Initiate an upload of a repository from Git or SVN to the fossology server.
+        No scanning agents will be triggered.
+        Arguments:
+            - urlOfRepo: url address of remote repository (starting with http://).
+            - vcsKind: Git or SVN.
+            -repoUserName: username for given repo.
+            -repoPassword: password for given repo.
+            -folderNum: ID number of folder to receive upload.
+        """
+        endpoint = "/repo/?mod=upload_vcs"
+        buildtoken = self._getUploadFormBuildToken()
+
+        values = (
+            ("uploadformbuild", buildtoken),
+            ("vcstype", vcsKind),
+            ("geturl", urlOfRepo),
+            ("username", repoUserName),
+            ("passwd", repoPassword),
+            ("folder", str(folderNum)),
+            ("public", "private"),
+            ("Check_agent_bucket", "0"),
+            ("Check_agent_copyright", "0"),
+            ("Check_agent_ecc", "0"),
+            ("Check_agent_mimetype", "0"),
+            ("Check_agent_nomos", "0"),
+            ("Check_agent_monk", "0"),
+            ("Check_agent_pkgagent", "0"),
+            ("deciderRules[]", ""),
+        )
+
+        results = self._post(endpoint, values)
+        return fossdriver.parser.parseAnchorTagsForNewUploadNumber(results.content)
+
     def GetLicenses(self, uploadNum, itemNum):
         """
         Obtain a dict of all licenses available in the Fossology server.
