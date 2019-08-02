@@ -139,7 +139,7 @@ def parseAnchorTagsForNewUploadNumber(content):
 
 def decodeAjaxShowJobsData(content):
     """Extract and decode the raw ajaxShowJobs data."""
-    rj = json.loads(content)
+    rj = json.loads(content.decode('utf-8'))
     s1 = rj["showJobsData"]
     # this is current a string that has unicode-escaped data.
     # we want to convert it to a bytes object, then re-convert it back
@@ -187,7 +187,7 @@ def parseDecodedAjaxShowJobsData(content):
 
 def parseSingleJobData(content):
     """Parse the JSON data returned from status call for a single job."""
-    rj = json.loads(content)
+    rj = json.loads(content.decode('utf-8'))
     jobArr = rj.get("aaData", None)
     if jobArr is None:
         return None

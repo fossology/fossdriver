@@ -106,7 +106,7 @@ class FossServer(object):
         # FIXME iTotalDisplayRecords and loop to get more if needed
         endpoint = "/repo/?mod=browse-processPost&folder={}&iDisplayStart=0&iDisplayLength=100".format(folderNum)
         results = self._get(endpoint)
-        rj = json.loads(results.content)
+        rj = json.loads(results.content.decode('utf-8'))
         uploadData = rj.get("aaData", None)
         if uploadData is None:
             return None
