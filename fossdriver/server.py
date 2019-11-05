@@ -30,6 +30,7 @@ class FossServer(object):
         # connection data
         self.config = config
         self.session = requests.Session()
+        self.serverVersion = ""
 
     def _get(self, endpoint):
         """Helper function: Make a GET call to the Fossology server."""
@@ -75,8 +76,17 @@ class FossServer(object):
         logging.debug("POST (file): " + url + " " + str(r))
         return r
 
+    def Version(self):
+        """Get the version number of the Fossology server."""
+        endpoint = "/repo/"
+        results = self._get(endpoint)
+        return fossdriver.parser.parseVersionNumber(results.content)
+
     def Login(self):
-        """Log in to Fossology server. Should be the first call made."""
+        """
+        Log in to Fossology server. Should be the first call made,
+        other than Version calls which can occur without logging in.
+        """
         endpoint = "/repo/?mod=auth"
         values = {
             "username": self.config.username,
@@ -84,6 +94,7 @@ class FossServer(object):
         }
         self._post(endpoint, values)
         # FIXME check for success?
+        self.serverVersion = self.Version()
 
     def GetFolderNum(self, folderName):
         """Find folder ID number for the given folder name from Fossology server."""

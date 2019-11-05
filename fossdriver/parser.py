@@ -32,6 +32,21 @@ class ParsedJob(object):
     def __repr__(self):
         return "Job {}: {}, {}".format(self._id, self.agent, self.status)
 
+def parseVersionNumber(content):
+    """
+    Parses content returned from a server.Version() call.
+    Extracts and returns the Fossology server version as a string.
+    """
+    # parsing the full HTML page content
+    soup = bs4.BeautifulSoup(content, "lxml")
+    # looking for the span with id versionInfo
+    elt = soup.find(id='versionInfo')
+    # parse its text to remove 'Version: [X.Y.Z]' at the beginning
+    partial = elt.contents[0].lstrip('Version: [')
+    # now remove everything after the next ']'
+    version = partial.split(']')[0]
+    return version
+
 def parseUploadDataForFolderLineItem(lineItem):
     """
     Parses one line item for parsing the uploads in a folder.
