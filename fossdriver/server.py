@@ -11,6 +11,7 @@ import time
 import urllib
 import io
 import sys
+from version_parser import Version
 
 import fossdriver.parser
 
@@ -81,6 +82,18 @@ class FossServer(object):
         endpoint = "/repo/"
         results = self._get(endpoint)
         return fossdriver.parser.parseVersionNumber(results.content)
+
+    def IsAtLeastVersion(self, compareVersionStr):
+        """
+        Returns True if the Fossology server's version is _at least_
+        as high as the specified compareVersionStr argument.
+        The check uses the version-parser PyPI package, so it may need
+        further testing on whether it correctly handles e.g. RC- and
+        interim commit versions.
+        """
+        serverVer = Version(self.serverVersion)
+        compareVer = Version(compareVersionStr)
+        return serverVer >= compareVer
 
     def Login(self):
         """
@@ -245,9 +258,17 @@ class FossServer(object):
             "page": 0,
         }
         results = self._post(endpoint, values)
-        decodedContent = fossdriver.parser.decodeAjaxShowJobsData(results.content)
-        jobData = fossdriver.parser.parseDecodedAjaxShowJobsData(decodedContent)
-        return jobData
+        # response format changed from XML to JSON on or around 3.5.0
+        # see https://github.com/fossology/fossdriver/issues/17
+        if self.IsAtLeastVersion("3.5.0"):
+            # parse json
+            jobData = fossdriver.parser.parseJSONShowJobsData(results.content)
+            return jobData
+        else:
+            # decode and parse XML
+            decodedContent = fossdriver.parser.decodeAjaxShowJobsData(results.content)
+            jobData = fossdriver.parser.parseDecodedAjaxShowJobsData(decodedContent)
+            return jobData
 
     def _getMostRecentAgentJobNum(self, uploadNum, agent):
         """

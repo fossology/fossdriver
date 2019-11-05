@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="fossdriver",
-    version="0.0.2",
+    version="0.0.3",
     author="Steve Winslow",
     author_email="swinslow@gmail.com",
     description="Python interface to control a FOSSology server",
@@ -29,5 +29,6 @@ setuptools.setup(
         "requests-toolbelt == 0.8.0",
         "bs4 == 0.0.1",
         "lxml == 4.2.1",
+        "version-parser == 1.0.0",
     ]
 )
