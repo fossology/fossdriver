@@ -203,7 +203,7 @@ def parseDecodedAjaxShowJobsData(content):
 def parseJSONShowJobsData(content):
     """Parse the JSON data returned from request for jobs data."""
     jobData = []
-    js = json.loads(content)
+    js = json.loads(content.decode('utf-8'))
     showJobsData = js.get("showJobsData", [])
     for sjd in showJobsData:
         jd = sjd.get("job", None)
