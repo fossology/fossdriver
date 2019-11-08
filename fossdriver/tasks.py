@@ -147,6 +147,7 @@ class Reuse(Task):
         self.oldFolderName = oldFolderName
         self.newUploadName = newUploadName
         self.newFolderName = newFolderName
+        self.exact = True
 
     def __repr__(self):
         return "Task: {} (old: uploadName {}, folder {}; new: uploadName {}, folder {})".format(self._type, self.oldUploadName, self.oldFolderName, self.newUploadName, self.newFolderName)
@@ -159,7 +160,7 @@ class Reuse(Task):
         if oldFolderNum is None or oldFolderNum == -1:
             logging.error("Failed: could not retrieve folder number for old folder {}".format(self.oldFolderName))
             return False
-        oldUploadNum = self.server.GetUploadNum(oldFolderNum, self.oldUploadName)
+        oldUploadNum = self.server.GetUploadNum(oldFolderNum, self.oldUploadName, self.exact)
         if oldUploadNum is None or oldUploadNum == -1:
             logging.error("Failed: could not retrieve upload number for old upload {} in folder {} ({})".format(self.oldUploadName, self.oldFolderName, oldFolderNum))
             return False
@@ -169,7 +170,7 @@ class Reuse(Task):
         if newFolderNum is None or newFolderNum == -1:
             logging.error("Failed: could not retrieve folder number for new folder {}".format(self.newFolderName))
             return False
-        newUploadNum = self.server.GetUploadNum(newFolderNum, self.newUploadName)
+        newUploadNum = self.server.GetUploadNum(newFolderNum, self.newUploadName, self.exact)
         if newUploadNum is None or newUploadNum == -1:
             logging.error("Failed: could not retrieve upload number for new upload {} in folder {} ({})".format(self.newUploadName, self.newFolderName, newFolderNum))
             return False
