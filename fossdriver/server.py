@@ -11,6 +11,7 @@ import time
 import urllib
 import io
 import sys
+from version_parser import Version
 
 import fossdriver.parser
 
@@ -30,6 +31,7 @@ class FossServer(object):
         # connection data
         self.config = config
         self.session = requests.Session()
+        self.serverVersion = ""
 
     def _get(self, endpoint):
         """Helper function: Make a GET call to the Fossology server."""
@@ -75,8 +77,29 @@ class FossServer(object):
         logging.debug("POST (file): " + url + " " + str(r))
         return r
 
+    def Version(self):
+        """Get the version number of the Fossology server."""
+        endpoint = "/repo/"
+        results = self._get(endpoint)
+        return fossdriver.parser.parseVersionNumber(results.content)
+
+    def IsAtLeastVersion(self, compareVersionStr):
+        """
+        Returns True if the Fossology server's version is _at least_
+        as high as the specified compareVersionStr argument.
+        The check uses the version-parser PyPI package, so it may need
+        further testing on whether it correctly handles e.g. RC- and
+        interim commit versions.
+        """
+        serverVer = Version(self.serverVersion)
+        compareVer = Version(compareVersionStr)
+        return serverVer >= compareVer
+
     def Login(self):
-        """Log in to Fossology server. Should be the first call made."""
+        """
+        Log in to Fossology server. Should be the first call made,
+        other than Version calls which can occur without logging in.
+        """
         endpoint = "/repo/?mod=auth"
         values = {
             "username": self.config.username,
@@ -84,6 +107,7 @@ class FossServer(object):
         }
         self._post(endpoint, values)
         # FIXME check for success?
+        self.serverVersion = self.Version()
 
     def GetFolderNum(self, folderName):
         """Find folder ID number for the given folder name from Fossology server."""
@@ -234,9 +258,17 @@ class FossServer(object):
             "page": 0,
         }
         results = self._post(endpoint, values)
-        decodedContent = fossdriver.parser.decodeAjaxShowJobsData(results.content)
-        jobData = fossdriver.parser.parseDecodedAjaxShowJobsData(decodedContent)
-        return jobData
+        # response format changed from XML to JSON on or around 3.5.0
+        # see https://github.com/fossology/fossdriver/issues/17
+        if self.IsAtLeastVersion("3.5.0"):
+            # parse json
+            jobData = fossdriver.parser.parseJSONShowJobsData(results.content)
+            return jobData
+        else:
+            # decode and parse XML
+            decodedContent = fossdriver.parser.decodeAjaxShowJobsData(results.content)
+            jobData = fossdriver.parser.parseDecodedAjaxShowJobsData(decodedContent)
+            return jobData
 
     def _getMostRecentAgentJobNum(self, uploadNum, agent):
         """

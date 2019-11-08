@@ -32,6 +32,21 @@ class ParsedJob(object):
     def __repr__(self):
         return "Job {}: {}, {}".format(self._id, self.agent, self.status)
 
+def parseVersionNumber(content):
+    """
+    Parses content returned from a server.Version() call.
+    Extracts and returns the Fossology server version as a string.
+    """
+    # parsing the full HTML page content
+    soup = bs4.BeautifulSoup(content, "lxml")
+    # looking for the span with id versionInfo
+    elt = soup.find(id='versionInfo')
+    # parse its text to remove 'Version: [X.Y.Z]' at the beginning
+    partial = elt.contents[0].lstrip('Version: [')
+    # now remove everything after the next ']'
+    version = partial.split(']')[0]
+    return version
+
 def parseUploadDataForFolderLineItem(lineItem):
     """
     Parses one line item for parsing the uploads in a folder.
@@ -138,7 +153,7 @@ def parseAnchorTagsForNewUploadNumber(content):
     return -1
 
 def decodeAjaxShowJobsData(content):
-    """Extract and decode the raw ajaxShowJobs data."""
+    """Extract and decode the raw ajaxShowJobs data (pre-3.5.0)."""
     rj = json.loads(content.decode('utf-8'))
     s1 = rj["showJobsData"]
     # this is current a string that has unicode-escaped data.
@@ -149,7 +164,7 @@ def decodeAjaxShowJobsData(content):
     return s2
 
 def parseDecodedAjaxShowJobsData(content):
-    """Parse the ajaxShowJobs data that has already been decoded."""
+    """Parse the ajaxShowJobs data that has already been decoded (pre-3.5.0)."""
     soup = bs4.BeautifulSoup(content, "lxml")
     rows = soup.find_all("tr")
     jobData = []
@@ -183,6 +198,31 @@ def parseDecodedAjaxShowJobsData(content):
                 p = href.partition("report=")
                 job.reportId = int(p[2])
         jobData.append(job)
+    return jobData
+
+def parseJSONShowJobsData(content):
+    """Parse the JSON data returned from request for jobs data."""
+    jobData = []
+    js = json.loads(content)
+    showJobsData = js.get("showJobsData", [])
+    for sjd in showJobsData:
+        jd = sjd.get("job", None)
+        if jd is not None:
+            jq = jd.get("jobQueue", None)
+            if jq is not None:
+                for k, v in jq.items():
+                    job = ParsedJob()
+                    # job ID is string initially
+                    job._id = int(k)
+                    # get job status
+                    endtext = v.get("jq_endtext", "")
+                    if endtext == "":
+                        job.status = "Not started"
+                    else:
+                        job.status = endtext
+                    # and get job agent
+                    job.agent = v.get("jq_type", "")
+                    jobData.append(job)
     return jobData
 
 def parseSingleJobData(content):
