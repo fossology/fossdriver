@@ -197,12 +197,18 @@ class BulkTextMatch(Task):
 
     def add(self, licenseName):
         """Create an "add" action and include it in the bulk actions."""
-        actionTuple = (licenseName, "add")
+        if self.server.IsAtLeastVersion("3.6.0"):
+            actionTuple = (licenseName, "Add")
+        else:
+            actionTuple = (licenseName, "add")
         self.actionTuples.append(actionTuple)
 
     def remove(self, licenseName):
         """Create a "remove" action and include it in the bulk actions."""
-        actionTuple = (licenseName, "remove")
+        if self.server.IsAtLeastVersion("3.6.0"):
+            actionTuple = (licenseName, "Remove")
+        else:
+            actionTuple = (licenseName, "remove")
         self.actionTuples.append(actionTuple)
 
     def _findLicenseID(self, licenseName):
