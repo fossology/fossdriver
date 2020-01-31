@@ -256,3 +256,32 @@ def parseSingleJobData(content):
         job.status == "Completed"):
         job.reportId = int(jobReportIdString)
     return job
+
+def parseStatisticsFromLicenseBrowser(content):
+    # parsing the full HTML page content
+    soup = bs4.BeautifulSoup(content, "lxml")
+    # looking for the table with id licsummary
+    elt = soup.find(id='licsummary')
+    tds = elt.find_all("td")
+    # check that they match expected labels, if so then capture values
+    if len(tds) < 16:
+        return []
+    if (tds[0].contents[0] != "Unique licenses" or
+       tds[3].contents[0] != "Files" or
+       tds[4].contents[0] != "Unique scanner detected licenses" or
+       tds[7].contents[0] != "Unique concluded licenses" or
+       tds[8].contents[0] != "Licenses found" or
+       tds[11].contents[0] != "Licenses concluded" or
+       tds[12].contents[0] != "Files with no detected licenses" or
+       tds[15].contents[0] != "Concluded files with no detected licenses"):
+       return []
+    return [
+        ("Unique licenses", int(tds[1].contents[0])),
+        ("Files", int(tds[2].contents[0])),
+        ("Unique scanner detected licenses", int(tds[5].contents[0])),
+        ("Unique concluded licenses", int(tds[6].contents[0])),
+        ("Licenses found", int(tds[9].contents[0])),
+        ("Licenses concluded", int(tds[10].contents[0])),
+        ("Files with no detected licenses", int(tds[13].contents[0])),
+        ("Concluded files with no detected licenses", int(tds[14].contents[0])),
+    ]

@@ -234,6 +234,21 @@ class FossServer(object):
         licenses = fossdriver.parser.parseAllLicenseData(results.content)
         return licenses
 
+    def GetUploadStatistics(self, uploadNum, itemNum):
+        """
+        Obtain a list of tuples in (str, int) format, where each str is one
+        of the "Summary" values from the left side of the License view, and
+        the int is the corresponding count.
+        Requires upload and item numbers due to Fossology server interface.
+        Arguments:
+            - uploadNum: valid ID number for an existing upload.
+            - topTreeItemNum: valid ID number for an item in that upload.
+        """
+        endpoint = "/repo/?mod=license&upload={}&item={}".format(uploadNum, itemNum)
+        results = self._get(endpoint)
+        stats = fossdriver.parser.parseStatisticsFromLicenseBrowser(results.content)
+        return stats
+
     def FindLicenseInParsedList(self, parsedLicenses, licName):
         """
         Find the ParsedLicense object with the given license name.
