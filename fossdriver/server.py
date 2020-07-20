@@ -374,9 +374,9 @@ class FossServer(object):
 
     def StartSPDXRDFReportGeneratorAgent(self, uploadNum):
         """
-        Start the spdx2 agent to generate an SPDX tag-value report.
+        Start the spdx2 agent to generate an SPDX RDF report.
         Arguments:
-            - uploadNum: ID number of upload to export as tag-value.
+            - uploadNum: ID number of upload to export as RDF.
         """
         endpoint = "/repo/?mod=ui_spdx2&outputFormat=spdx2&upload={}".format(uploadNum)
         self._get(endpoint)
