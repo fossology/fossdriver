@@ -313,3 +313,38 @@ class SPDXTV(Task):
         # finally, get and save the SPDX file
         retval = self.server.GetSPDXTVReport(uploadNum, self.outFilePath)
         return retval
+
+class SPDXRDF(Task):
+    def __init__(self, server, uploadName, folderName, outFilePath):
+        super(SPDXRDF, self).__init__(server, "SPDXRDF")
+        self.uploadName = uploadName
+        self.folderName = folderName
+        self.outFilePath = outFilePath
+
+    def __repr__(self):
+        return "Task: {} (uploadName {}, folder {}) to file {}".format(self._type, self.uploadName, self.folderName, self.outFilePath)
+
+    def run(self):
+        """Start the spdx2 agent, wait until it completes and return success or failure."""
+        logging.info("Running task: {}".format(self._type))
+        # first, get the folder and then upload ID
+        folderNum = self.server.GetFolderNum(self.folderName)
+        if folderNum is None or folderNum == -1:
+            logging.error("Failed: could not retrieve folder number for folder {}".format(self.folderName))
+            return False
+        uploadNum = self.server.GetUploadNum(folderNum, self.uploadName)
+        if uploadNum is None or uploadNum == -1:
+            logging.error("Failed: could not retrieve upload number for upload {} in folder {} ({})".format(self.uploadName, self.folderName, folderNum))
+            return False
+
+        # now, start the export agent
+        logging.info("Running spdx2 (RDF) agent on upload {} ({})".format(self.uploadName, uploadNum))
+        self.server.StartSPDXRDFReportGeneratorAgent(uploadNum)
+
+        # wait until the export agent finishes
+        logging.info("Waiting for spdx2 (RDF) to finish for upload {} ({}".format(self.uploadName, uploadNum))
+        self.server.WaitUntilAgentIsDone(uploadNum, "spdx2", pollSeconds=5)
+
+        # finally, get and save the SPDX file
+        retval = self.server.GetSPDXRDFReport(uploadNum, self.outFilePath)
+        return retval
