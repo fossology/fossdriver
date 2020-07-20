@@ -492,3 +492,46 @@ class FossServer(object):
         jobNum = self._getMostRecentAgentJobNum(uploadNum, agent)
         while not self._isJobDoneYet(jobNum):
             time.sleep(pollSeconds)
+
+    def StartRDFImport(self, rdfPath, folderNum, uploadNum):
+        """
+        Initiate an import of an RDF file to the Fossology server. The RDF file will
+        be uploaded and then the reportImport agent will be triggered.
+
+        NOTE that currently this makes the following assumptions, which are not
+        currently configurable (but could be):
+            - import licenses as new rather than candidate
+            - import concluded license findings (and overwrite)
+            - do not import licenseInfoInFile license findings
+            - do not set file as TBD
+            - do not import copyright findings (appears to cause problems with
+              duplicates, based on my preliminary tests)
+
+        Arguments:
+            - rdfPath: path to RDF file being uploaded for import.
+            - folderNum: ID number of folder where upload is located.
+            - uploadNum: ID number of existing upload to be analyzed.
+        """
+        endpoint = "/repo/?mod=ui_reportImport"
+        basename = os.path.basename(os.path.expanduser(rdfPath))
+
+        # determine mime type
+        # FIXME consider whether this should check and/or force to application/rdf+xml
+        mime = MimeTypes()
+        if sys.version_info > (3, 4):
+            murl = urllib.request.pathname2url(rdfPath)
+        else:
+            murl = urllib.pathname2url(rdfPath)
+        mime_type = mime.guess_type(murl)
+
+        values = (
+            ("oldfolderid", str(folderNum)),
+            ("uploadselect", str(uploadNum)),
+            ("report", (basename, open(rdfPath, "rb"), mime_type[0])),
+            ("addNewLicensesAs", "license"),
+            ("addConcludedAsDecisions", "true"),
+            ("addConcludedAsDecisionsOverwrite", "true"),
+        )
+
+        results = self._postFile(endpoint, values)
+        # FIXME should anything be returned?

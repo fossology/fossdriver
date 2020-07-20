@@ -348,3 +348,37 @@ class SPDXRDF(Task):
         # finally, get and save the SPDX file
         retval = self.server.GetSPDXRDFReport(uploadNum, self.outFilePath)
         return retval
+
+class ImportRDF(Task):
+    def __init__(self, server, rdfPath, uploadName, folderName):
+        super(ImportRDF, self).__init__(server, "ImportRDF")
+        self.rdfPath = rdfPath
+        self.uploadName = uploadName
+        self.folderName = folderName
+
+    def __repr__(self):
+        return "Task: {} (rdfPath {}, upload {}, folder {})".format(self._type, self.rdfPath, self.uploadName, self.folderName)
+
+    def run(self):
+        """Start the RDF file upload, wait until it completes importing, and
+        return success or failure."""
+        logging.info("Running task: {}".format(self._type))
+        # first, get the folder and then upload ID
+        folderNum = self.server.GetFolderNum(self.folderName)
+        if folderNum is None or folderNum == -1:
+            logging.error("Failed: could not retrieve folder number for folder {}".format(self.folderName))
+            return False
+        uploadNum = self.server.GetUploadNum(folderNum, self.uploadName)
+        if uploadNum is None or uploadNum == -1:
+            logging.error("Failed: could not retrieve upload number for upload {} in folder {} ({})".format(self.uploadName, self.folderName, folderNum))
+            return False
+
+        # now, start uploading/importing the RDF file
+        logging.info("Uploading and importing {} on upload {} ({})".format(self.rdfPath, self.uploadName, uploadNum))
+        self.server.StartRDFImport(self.rdfPath, folderNum, uploadNum)
+
+        # and wait until reportImport finishes
+        logging.info("Waiting for reportImport agent to finish for upload {} ({})".format(self.uploadName, uploadNum))
+        self.server.WaitUntilAgentIsDone(uploadNum, "reportImport", pollSeconds=5)
+
+        return True
