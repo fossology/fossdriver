@@ -372,6 +372,15 @@ class FossServer(object):
         endpoint = "/repo/?mod=ui_spdx2&outputFormat=spdx2tv&upload={}".format(uploadNum)
         self._get(endpoint)
 
+    def StartSPDXRDFReportGeneratorAgent(self, uploadNum):
+        """
+        Start the spdx2 agent to generate an SPDX tag-value report.
+        Arguments:
+            - uploadNum: ID number of upload to export as tag-value.
+        """
+        endpoint = "/repo/?mod=ui_spdx2&outputFormat=spdx2&upload={}".format(uploadNum)
+        self._get(endpoint)
+
     def GetSPDXTVReport(self, uploadNum, outFilePath):
         """
         Download and write to disk the SPDX tag-value report for the most recent
@@ -385,6 +394,32 @@ class FossServer(object):
         jobNum = self._getMostRecentAgentJobNum(uploadNum, "spdx2tv")
         job = self._getJobSingleData(jobNum)
         if job.agent != "spdx2tv" or job.status != "Completed":
+            return False
+
+        # now, go get the actual report
+        endpoint = "/repo/?mod=download&report={}".format(job.reportId)
+        results = self._get(endpoint)
+        if sys.version_info > (3, 4):
+            with open(outFilePath, "w") as f:
+                f.write(results.content.decode("utf-8"))
+        else:
+            with io.open(outFilePath, "w", encoding="utf-8") as f:
+                f.write(results.content.decode("utf-8"))
+        return True
+
+    def GetSPDXRDFReport(self, uploadNum, outFilePath):
+        """
+        Download and write to disk the SPDX RDF report for the most recent
+        spdx2 agent.
+        Arguments:
+            - uploadNum: ID number of upload to retrieve report for.
+            - outFilePath: path to write report to.
+        Returns: True if succeeded, False if failed for any reason.
+        """
+        # first, get reportId so we can build the endpoint
+        jobNum = self._getMostRecentAgentJobNum(uploadNum, "spdx2")
+        job = self._getJobSingleData(jobNum)
+        if job.agent != "spdx2" or job.status != "Completed":
             return False
 
         # now, go get the actual report
