@@ -91,6 +91,11 @@ class FossServer(object):
         further testing on whether it correctly handles e.g. RC- and
         interim commit versions.
         """
+        if self.serverVersion == 'unknown':
+            # Assume git clones are a recent version, we can't really do
+            # anything better than this...
+            return True
+
         serverVer = Version(self.serverVersion)
         compareVer = Version(compareVersionStr)
         return serverVer >= compareVer
