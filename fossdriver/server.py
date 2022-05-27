@@ -19,6 +19,7 @@ import pdb
 import fossdriver.parser
 
 NOT_LOGGED_IN_RESPONSE = 'session timed out'
+USER_PASSWORD_NOT_FOUND = 'The combination of user name and password was not found'
 MAX_LOGIN_ATTEMPTS = 5
 
 class FossServerException(Exception):
@@ -54,8 +55,10 @@ class FossServer(object):
         exc = None
         for i in range(0,5):
             try:
+                # TODO: DEBUG - force a timeout
+                pdb.set_trace()
                 r = self.session.get(url)
-                if self._checkedLoggedIn(r):
+                if self._checkLoggedIn(r):
                     self.loginAttempts = 0;
                     return r
                 else:
@@ -78,11 +81,22 @@ class FossServer(object):
         """Helper function: Make a POST call to the Fossology server."""
         url = self.config.serverUrl + endpoint
         data = values
-        r = self.session.post(url, data=data)
-        logging.debug("POST: " + url + " " + str(r))
-        # TODO: REMOVE DEBUG
-        pdb.set_trace() # Check for error after timeout
-        return r
+        exc = None
+        for i in range(0,5):
+            r = self.session.post(url, data=data)
+            if self._checkedLoggedIn(r):
+                self.loginAttempts = 0
+                logging.debug("POST: " + url + " " + str(r))
+                return r
+            else:
+                self.loginAttempts += 1
+                pdb.set_trace()
+                # TODO DEBUG
+                if (self.loginAttempts > MAX_LOGIN_ATTEMPTS):
+                    logging.error("Unable to relogin - max login attempts exceeded")
+                    raise FossServerException('Maximum Login Attempts Exceeded')
+                Login()
+
 
     def _postFile(self, endpoint, values):
         """Helper function: Make a POST call to the Fossology server with multipart data."""
@@ -137,9 +151,7 @@ class FossServer(object):
             "password": self.config.password,
         }
         r = self._post(endpoint, values)
-        # TODO: Debug
-        pdb.set_trace() # Check what happens with invalid credentials
-        if not r.ok:
+        if USER_PASSWORD_NOT_FOUND in r.text:
             raise FossServerException('Unsuccessful Login')
         self.serverVersion = self.Version()
 
