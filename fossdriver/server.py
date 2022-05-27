@@ -13,7 +13,16 @@ import io
 import sys
 from version_parser import Version
 
+# TODO: REMOVE DEBUG
+import pdb
+
 import fossdriver.parser
+
+NOT_LOGGED_IN_RESPONSE = 'session timed out'
+MAX_LOGIN_ATTEMPTS = 5
+
+class FossServerException(Exception):
+    pass
 
 class BulkTextMatchAction(object):
     def __init__(self):
@@ -32,6 +41,11 @@ class FossServer(object):
         self.config = config
         self.session = requests.Session()
         self.serverVersion = ""
+        self.loginAttempts = 0
+        
+    def _checkLoggedIn(self, response):
+        return not (response.ok and response.text != None and NOT_LOGGED_IN_RESPONSE in response.text)
+
 
     def _get(self, endpoint):
         """Helper function: Make a GET call to the Fossology server."""
@@ -41,7 +55,17 @@ class FossServer(object):
         for i in range(0,5):
             try:
                 r = self.session.get(url)
-                return r
+                if self._checkedLoggedIn(r):
+                    self.loginAttempts = 0;
+                    return r
+                else:
+                    self.loginAttempts += 1
+                    # TODO: Remove debug
+                    pdb.set_trace()
+                    if (self.loginAttempts > MAX_LOGIN_ATTEMPTS):
+                        logging.error("Unable to relogin - max login attempts exceeded")
+                        raise FossServerException('Maximum Login Attempts Exceeded')
+                        
             except requests.exceptions.ConnectionError as e:
                 # try again after a brief pause
                 time.sleep(1)
@@ -56,6 +80,8 @@ class FossServer(object):
         data = values
         r = self.session.post(url, data=data)
         logging.debug("POST: " + url + " " + str(r))
+        # TODO: REMOVE DEBUG
+        pdb.set_trace() # Check for error after timeout
         return r
 
     def _postFile(self, endpoint, values):
@@ -110,8 +136,11 @@ class FossServer(object):
             "username": self.config.username,
             "password": self.config.password,
         }
-        self._post(endpoint, values)
-        # FIXME check for success?
+        r = self._post(endpoint, values)
+        # TODO: Debug
+        pdb.set_trace() # Check what happens with invalid credentials
+        if not r.ok:
+            raise FossServerException('Unsuccessful Login')
         self.serverVersion = self.Version()
 
     def GetFolderNum(self, folderName):
