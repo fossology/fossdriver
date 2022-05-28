@@ -45,58 +45,56 @@ class FossServer(object):
         self.loginAttempts = 0
         
     def _checkLoggedIn(self, response):
+        """ Returns true if the user is logged in """
         return not (response.ok and response.text != None and NOT_LOGGED_IN_RESPONSE in response.text)
 
-
-    def _get(self, endpoint):
-        """Helper function: Make a GET call to the Fossology server."""
-        url = self.config.serverUrl + endpoint
-        logging.debug("GET: " + url)
+    def _retryRequest(self, fn, *args):
+        """ Retries a Request function checking for being logged in.  
+        fn is function to call that returns a request object """
         exc = None
-        for i in range(0,5):
+        connectionRetries = 0
+        while connectionRetries < 5 and self.loginAttempts <= MAX_LOGIN_ATTEMPTS:
             try:
-                # TODO: DEBUG - force a timeout
-                pdb.set_trace()
-                r = self.session.get(url)
+                r = fn(*args);
                 if self._checkLoggedIn(r):
-                    self.loginAttempts = 0;
+                    self.loginAttempts = 0
                     return r
                 else:
                     self.loginAttempts += 1
                     # TODO: Remove debug
                     pdb.set_trace()
-                    if (self.loginAttempts > MAX_LOGIN_ATTEMPTS):
-                        logging.error("Unable to relogin - max login attempts exceeded")
-                        raise FossServerException('Maximum Login Attempts Exceeded')
-                        
+                    self.Login()
             except requests.exceptions.ConnectionError as e:
                 # try again after a brief pause
                 time.sleep(1)
                 exc = e
-                logging.debug("attempt " + str(i+1) + " failed")
-        # if we get here, we failed to connect
-        raise exc
+                logging.debug("attempt " + str(connectionRetries+1) + " failed")
+            except Exception as e:
+                logging.error("Unexpected exception in request - retrying...")
+                exc = e
+                time.sleep(1)
+        # If we got here, we're in some sort of trouble...
+        if  self.loginAttempts >= MAX_LOGIN_ATTEMPTS:
+            logging.error("Unable to relogin - max login attempts exceeded")
+            raise FossServerException('Maximum Login Attempts Exceeded')
+        else:
+            raise exc
+            
+
+    def _get(self, endpoint):
+        """Helper function: Make a GET call to the Fossology server."""
+        url = self.config.serverUrl + endpoint
+        logging.debug("GET: " + url)
+        return self._retryRequest(self.session.get, url);
+        
 
     def _post(self, endpoint, values):
         """Helper function: Make a POST call to the Fossology server."""
         url = self.config.serverUrl + endpoint
         data = values
         exc = None
-        for i in range(0,5):
-            r = self.session.post(url, data=data)
-            if self._checkedLoggedIn(r):
-                self.loginAttempts = 0
-                logging.debug("POST: " + url + " " + str(r))
-                return r
-            else:
-                self.loginAttempts += 1
-                pdb.set_trace()
-                # TODO DEBUG
-                if (self.loginAttempts > MAX_LOGIN_ATTEMPTS):
-                    logging.error("Unable to relogin - max login attempts exceeded")
-                    raise FossServerException('Maximum Login Attempts Exceeded')
-                Login()
-
+        logging.debug("POST: " + url + " " + str(r))
+        return self._retryRequest(self.session.post, url, data=data);
 
     def _postFile(self, endpoint, values):
         """Helper function: Make a POST call to the Fossology server with multipart data."""
@@ -112,10 +110,7 @@ class FossServer(object):
         }
         # FIXME is this next line necessary?
         # cookies = self.session.cookies.get_dict()
-
-        r = self.session.post(url, data=data, headers=headers)
-        logging.debug("POST (file): " + url + " " + str(r))
-        return r
+        return self._retryRequest(self.session.post, url, data=data, headers=headers);
 
     def Version(self):
         """Get the version number of the Fossology server."""
