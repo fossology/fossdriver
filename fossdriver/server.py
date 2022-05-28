@@ -13,9 +13,6 @@ import io
 import sys
 from version_parser import Version
 
-# TODO: REMOVE DEBUG
-import pdb
-
 import fossdriver.parser
 
 NOT_LOGGED_IN_RESPONSE = 'session timed out'
@@ -48,21 +45,19 @@ class FossServer(object):
         """ Returns true if the user is logged in """
         return not (response.ok and response.text != None and NOT_LOGGED_IN_RESPONSE in response.text)
 
-    def _retryRequest(self, fn, *args):
+    def _retryRequest(self, fn, *args, **kwargs):
         """ Retries a Request function checking for being logged in.  
         fn is function to call that returns a request object """
         exc = None
         connectionRetries = 0
         while connectionRetries < 5 and self.loginAttempts <= MAX_LOGIN_ATTEMPTS:
             try:
-                r = fn(*args);
+                r = fn(*args, **kwargs);
                 if self._checkLoggedIn(r):
                     self.loginAttempts = 0
                     return r
                 else:
                     self.loginAttempts += 1
-                    # TODO: Remove debug
-                    pdb.set_trace()
                     self.Login()
             except requests.exceptions.ConnectionError as e:
                 # try again after a brief pause
@@ -93,7 +88,7 @@ class FossServer(object):
         url = self.config.serverUrl + endpoint
         data = values
         exc = None
-        logging.debug("POST: " + url + " " + str(r))
+        logging.debug("POST: " + url)
         return self._retryRequest(self.session.post, url, data=data);
 
     def _postFile(self, endpoint, values):
