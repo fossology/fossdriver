@@ -28,7 +28,7 @@ setuptools.setup(
         "requests == 2.20.0",
         "requests-toolbelt == 0.8.0",
         "bs4 == 0.0.1",
-        "lxml == 4.6.3",
+        "lxml == 4.6.5",
         "version-parser == 1.0.0",
     ]
 )
