@@ -1,6 +1,8 @@
 # Copyright Contributors to the fossdriver project.
 # SPDX-License-Identifier: BSD-3-Clause OR MIT
 
+import setuptools
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
