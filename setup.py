@@ -25,7 +25,7 @@ setuptools.setup(
         "SPDX-License-Identifier: BSD-3-Clause OR MIT",
     ),
     install_requires=[
-        "requests == 2.20.0",
+        "requests == 2.31.0",
         "requests-toolbelt == 0.8.0",
         "bs4 == 0.0.1",
         "lxml == 4.6.5",
